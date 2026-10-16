@@ -3,17 +3,19 @@ import {
   escapeHtml,
   isValidEmail,
   renderBody,
+  renderChart,
   renderContact,
   renderDemoActions,
   renderHead,
+  renderRootBody,
+  renderRootHead,
 } from '../src/render';
 import { siteConfig, type SiteConfig } from '../src/site.config';
+import { LOCALES, TEXT } from '../src/content';
 
 function withConfig(patch: Partial<SiteConfig>): SiteConfig {
   return { ...siteConfig, ...patch };
 }
-
-const demo = siteConfig.demos.items[0]!;
 
 describe('escapeHtml', () => {
   it('HTML özel karakterlerini kaçırır', () => {
@@ -23,121 +25,109 @@ describe('escapeHtml', () => {
   });
 });
 
-describe('örnek raporlar', () => {
-  it('yayın kapalıyken indirme düğmesi üretmez', () => {
-    const html = renderDemoActions({ ...demo, pdfUrl: '/ornek.pdf' }, false);
-    expect(html).not.toContain('download');
+describe('örnek çalışmalar', () => {
+  const demo = TEXT.tr.work.items[0]!;
+
+  it('yayın kapalıyken indirme bağlantısı üretmez', () => {
+    const html = renderDemoActions(demo, TEXT.tr, false, '../');
     expect(html).not.toContain('<a');
     expect(html).toContain('Özet yakında');
   });
 
-  it('yayın açık ama PDF yolu yoksa yine düğme üretmez', () => {
-    const html = renderDemoActions({ ...demo, pdfUrl: null }, true);
-    expect(html).not.toContain('<a');
-  });
-
-  it('yayın açık ve PDF yolu varsa indirme bağlantısı üretir', () => {
-    const html = renderDemoActions({ ...demo, pdfUrl: '/raporlar/ornek.pdf' }, true);
-    expect(html).toContain('href="/raporlar/ornek.pdf"');
+  it('yayın açıkken göreli PDF bağlantısı üretir', () => {
+    const html = renderDemoActions(demo, TEXT.tr, true, '../');
+    expect(html).toContain(`href="../ornekler/${demo.pdf}"`);
     expect(html).toContain('download');
   });
 
-  it('yayın kapatılırsa sayfada hiç indirme bağlantısı kalmaz', () => {
-    const body = renderBody(withConfig({ demos: { ...siteConfig.demos, published: false } }));
-    expect(body).not.toMatch(/\sdownload[\s>]/);
+  it('yayın kapatılırsa sayfada hiç PDF bağlantısı kalmaz', () => {
+    const body = renderBody(withConfig({ demosPublished: false }), 'en');
     expect(body).not.toMatch(/\.pdf/i);
   });
 
-  it('varsayılan yapılandırmada yalnız tek sayfalık özetler indirilebilir', () => {
-    const body = renderBody(siteConfig);
-    const links = [...body.matchAll(/href="([^"]+\.pdf)"/g)].map((m) => m[1]);
-    expect(links).toHaveLength(siteConfig.demos.items.length);
-    for (const href of links) {
-      expect(href).toMatch(/^\/ornekler\/proofvane-ornek-[a-z-]+\.pdf$/);
-    }
+  it.each(LOCALES)('%s: her örnek kendi dilindeki tek sayfalık özete bağlanır', (l) => {
+    const links = [...renderBody(siteConfig, l).matchAll(/href="([^"]+\.pdf)"/g)].map((m) => m[1]);
+    expect(links).toEqual(TEXT[l].work.items.map((d) => `../ornekler/${d.pdf}`));
   });
 
-  it('her örnek kartında özet etiketi bulunur', () => {
-    const body = renderBody(siteConfig);
-    const count = body.split('Örnek çalışma · tek sayfalık özet').length - 1;
-    expect(count).toBe(siteConfig.demos.items.length);
+  it('grafik her segmenti erişilebilir metin ve görünür lejantla verir', () => {
+    for (const d of TEXT.en.work.items) {
+      const html = renderChart(d);
+      expect(html).toContain('role="img"');
+      for (const s of d.segments) {
+        expect(html).toContain(`${s.label} ${s.value}`);
+        expect(html).toContain(`<span class="legend-value">${s.value}</span>`);
+      }
+      const rects = (html.match(/<rect class="seg /g) ?? []).length - d.segments.length;
+      const total = d.segments.reduce((a, s) => a + s.value, 0);
+      // Birim grafiğinde her karşılaştırma bir kare; çubukta her segment bir dikdörtgen.
+      expect(rects).toBe(total <= 120 ? total : d.segments.length);
+    }
   });
 });
 
 describe('iletişim', () => {
-  it('e-posta null iken yedek metni gösterir, mailto üretmez', () => {
-    const html = renderContact(null);
-    expect(html).toContain('İletişim adresi yakında');
+  it('e-posta yoksa yedek metin, mailto yok', () => {
+    const html = renderContact(withConfig({ contactEmail: null }), TEXT.en);
+    expect(html).toContain('coming soon');
     expect(html).not.toContain('mailto:');
   });
 
-  it('geçersiz adres için de mailto üretmez', () => {
-    expect(renderContact('"><script>')).not.toContain('mailto:');
+  it('geçersiz adres için mailto üretmez', () => {
+    expect(renderContact(withConfig({ contactEmail: '"><script>' }), TEXT.tr)).not.toContain(
+      'mailto:',
+    );
   });
 
-  it('geçerli adres verildiğinde mailto bağlantısı üretir', () => {
-    const html = renderContact('merhaba@ornek.com.tr');
-    expect(html).toContain('href="mailto:merhaba@ornek.com.tr"');
-    expect(html).not.toContain('yakında');
-  });
-
-  it('varsayılan sayfada kurumsal adres mailto ile var, form yok', () => {
-    const body = renderBody(siteConfig);
+  it('hello@ ve partnerships@ adreslerini gösterir, form yok', () => {
+    const body = renderBody(siteConfig, 'tr');
     expect(body).toContain('href="mailto:hello@proofvane.com"');
+    expect(body).toContain('href="mailto:partnerships@proofvane.com"');
     expect(body).not.toContain('<form');
-  });
-
-  it('e-posta yoksa footer da mailto üretmez', () => {
-    expect(renderBody(withConfig({ contactEmail: null }))).not.toContain('mailto:');
   });
 
   it('isValidEmail temel biçimi denetler', () => {
     expect(isValidEmail('a@b.co')).toBe(true);
     expect(isValidEmail('a@b')).toBe(false);
+    expect(isValidEmail(null)).toBe(false);
   });
 });
 
-describe('marka ve meta', () => {
-  it('marka Proofvane ve tek yerden değişir', () => {
-    expect(renderHead(siteConfig)).toContain('<title>Proofvane |');
-    const body = renderBody(withConfig({ brandName: 'Deneme Veri' }));
-    expect(body).toContain('Deneme Veri');
-    expect(body).not.toContain('Proofvane');
-    expect(body).not.toContain('Stüdyo (çalışma adı)');
-    expect(renderHead(withConfig({ brandName: 'Deneme Veri' }))).toContain('<title>Deneme Veri |');
+describe.each(LOCALES)('%s sayfası', (l) => {
+  const t = TEXT[l];
+  const head = renderHead(siteConfig, l);
+  const body = renderBody(siteConfig, l, 2026);
+
+  it('başlık, açıklama ve og:locale dile göredir', () => {
+    expect(head).toContain(`<title>Proofvane | ${escapeHtml(t.meta.titleSuffix)}</title>`);
+    expect(head).toContain(
+      `<meta name="description" content="${escapeHtml(t.meta.description)}" />`,
+    );
+    expect(head).toContain(`<meta property="og:locale" content="${t.ogLocale}" />`);
+    const other = LOCALES.find((x) => x !== l)!;
+    expect(head).toContain(
+      `<meta property="og:locale:alternate" content="${TEXT[other].ogLocale}" />`,
+    );
   });
 
-  it('footer ticari unvanı, şehri ve alt menüyü gösterir', () => {
-    const body = renderBody(siteConfig, 2026);
-    const footer = body.slice(body.indexOf('<footer'));
-    expect(footer).toContain('Proofvane, HCSoft işletmesinin markasıdır.');
-    expect(footer).toContain('Ankara');
-    expect(footer).toContain('aria-label="Alt menü"');
-    expect(footer).toContain('© 2026 Proofvane');
-  });
-
-  it('indexable false iken noindex ekler, true iken eklemez', () => {
-    expect(renderHead(withConfig({ indexable: false }))).toContain('noindex');
-    expect(renderHead(siteConfig)).not.toContain('noindex');
-  });
-
-  it('siteUrl verildiğinde canonical, og:url ve og:image ekler', () => {
-    expect(renderHead(withConfig({ siteUrl: null }))).not.toContain('canonical');
-    const head = renderHead(siteConfig);
-    expect(head).toContain('<link rel="canonical" href="https://proofvane.com/" />');
-    expect(head).toContain('<meta property="og:url" content="https://proofvane.com/" />');
-    expect(head).toContain('content="https://proofvane.com/og-image.png"');
+  it('canonical kendi dil adresi; hreflang tr, en ve x-default', () => {
+    expect(head).toContain(`<link rel="canonical" href="https://proofvane.com/${l}/" />`);
+    expect(head).toContain(`<meta property="og:url" content="https://proofvane.com/${l}/" />`);
+    expect(head).toContain(
+      '<link rel="alternate" hreflang="tr" href="https://proofvane.com/tr/" />',
+    );
+    expect(head).toContain(
+      '<link rel="alternate" hreflang="en" href="https://proofvane.com/en/" />',
+    );
+    expect(head).toContain(
+      '<link rel="alternate" hreflang="x-default" href="https://proofvane.com/" />',
+    );
   });
 
   it('JSON-LD geçerli ve uydurma alan içermez', () => {
-    const head = renderHead(siteConfig);
     const m = head.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
-    expect(m).not.toBeNull();
     const data = JSON.parse(m![1]!) as Record<string, unknown>;
-    expect(data['@type']).toBe('Organization');
-    expect(data.name).toBe('Proofvane');
-    expect(data.legalName).toBe('HCSoft');
-    expect(data.email).toBe('hello@proofvane.com');
+    expect(data).toMatchObject({ '@type': 'Organization', name: 'Proofvane', legalName: 'HCSoft' });
     for (const key of [
       'aggregateRating',
       'review',
@@ -149,60 +139,63 @@ describe('marka ve meta', () => {
     }
   });
 
-  it('tam olarak bir h1 ve tüm menü hedefleri vardır', () => {
-    const body = renderBody(siteConfig);
-    expect(body.match(/<h1[\s>]/g)).toHaveLength(1);
-    for (const [, id] of body.matchAll(/href="#([^"]+)"/g)) {
-      expect(body).toContain(`id="${id}"`);
-    }
+  it('indexable false iken noindex', () => {
+    expect(head).not.toContain('noindex');
+    expect(renderHead(withConfig({ indexable: false }), l)).toContain('noindex');
   });
-});
 
-describe('konumlandırma', () => {
-  const body = renderBody(siteConfig);
-  const head = renderHead(siteConfig);
-  const exam = /kpss|ösym|atanma|kamu ilan|tercih/i;
+  it('tam bir h1, tüm sayfa içi bağlantı hedefleri mevcut', () => {
+    expect(body.match(/<h1[\s>]/g)).toHaveLength(1);
+    for (const [, id] of body.matchAll(/href="#([^"]+)"/g)) expect(body).toContain(`id="${id}"`);
+  });
 
-  function section(id: string): string {
-    const start = body.indexOf(`<section id="${id}"`);
-    expect(start).toBeGreaterThan(-1);
-    const end = body.indexOf('</section>', start);
-    return body.slice(start, end);
-  }
-
-  it('başlık, açıklama ve giriş bölümü genel yazılım stüdyosu olarak konumlanır', () => {
-    const hero = body.slice(
-      body.indexOf('<section class="hero"'),
-      body.indexOf('<section id="hizmetler"'),
+  it('dil seçici: iki dil, göreli bağlantı, geçerli dil aria-current', () => {
+    expect(body).toContain(
+      `href="../${l}/" hreflang="${l}" lang="${l}" data-locale="${l}" aria-current="page"`,
     );
-    for (const text of [head, hero]) {
-      expect(text).not.toMatch(exam);
-      expect(text).toMatch(/Flutter/);
-      expect(text).toMatch(/web/i);
-      expect(text).toMatch(/API/);
-    }
+    const other = LOCALES.find((x) => x !== l)!;
+    expect(body).toMatch(
+      new RegExp(
+        `href="\\.\\./${other}/" hreflang="${other}" lang="${other}" data-locale="${other}">`,
+      ),
+    );
+    expect(body).toContain(`aria-label="${t.a11y.langNav}"`);
+  });
+
+  it('erişilebilirlik etiketleri dile göredir', () => {
+    expect(body).toContain(`>${t.a11y.skip}</a>`);
+    expect(body).toContain(`aria-label="${t.a11y.mainNav}"`);
+    expect(body).toContain(`aria-label="${t.a11y.notesLabel}"`);
+  });
+
+  it('alt bilgide ticari unvan ve yıl', () => {
+    expect(body).toContain(escapeHtml(t.footer.legal('Proofvane', 'HCSoft')));
+    expect(body).toContain('© 2026 Proofvane');
+  });
+
+  it('hizmetler Flutter ile başlar ve beş hizmeti kapsar', () => {
+    const titles = [...body.matchAll(/<h3 id="svc-([^"]+)">/g)].map((m) => m[1]);
+    expect(titles).toEqual(['flutter', 'web', 'api', 'automation', 'verification']);
   });
 
   it('sınav/kamu ilanı ifadeleri yalnızca örnek çalışmalar bölümünde geçer', () => {
-    const withoutDemos = body.replace(section('ornekler'), '');
-    expect(withoutDemos).not.toMatch(exam);
+    const exam = /kpss|ösym|atanma|kamu ilan|tercih|placement|public-sector|kariyer kapısı/i;
+    const start = body.indexOf('<section id="work"');
+    const end = body.indexOf('</section>', start);
+    const withoutWork = body.slice(0, start) + body.slice(end);
+    expect(withoutWork).not.toMatch(exam);
+    expect(head.replace(/<script[\s\S]*?<\/script>/, '')).not.toMatch(exam);
   });
+});
 
-  it('hizmetler uygulama geliştirmeyle başlar ve beş hizmeti kapsar', () => {
-    const services = section('hizmetler');
-    const titles = [...services.matchAll(/<h4 id="[^"]+">([^<]+)<\/h4>/g)].map((m) => m[1]);
-    expect(titles).toEqual([
-      'Mobil uygulamalar',
-      'Web uygulamaları',
-      'API ve backend',
-      'Veri doğrulama ve kaynaklı raporlama',
-      'Veri otomasyonu',
-    ]);
-  });
-
-  it('örnek çalışmalar bölümü veri kalitesi örneği olarak çerçevelenir', () => {
-    const demos = section('ornekler');
-    expect(demos).toContain('Örnek çalışmalar');
-    expect(demos).toContain('Veri kalitesi');
+describe('kök sayfa', () => {
+  it('hreflang alternatifleri ve iki dile bağlantı var, canonical yok', () => {
+    const head = renderRootHead(siteConfig);
+    expect(head).toContain('hreflang="x-default"');
+    expect(head).toContain('hreflang="tr"');
+    expect(head).not.toContain('canonical');
+    const body = renderRootBody(siteConfig);
+    expect(body).toContain('href="./tr/"');
+    expect(body).toContain('href="./en/"');
   });
 });

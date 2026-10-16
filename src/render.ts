@@ -1,10 +1,17 @@
 /**
- * Sayfayı yapılandırmadan statik HTML olarak üretir. Derleme sırasında
- * (vite.config.ts içindeki eklenti) çalışır; tarayıcıda JavaScript gerekmez.
+ * Sayfaları yapılandırma ve dil metinlerinden statik HTML olarak üretir.
+ * Derleme sırasında (vite.config.ts) çalışır; içerik JavaScript olmadan görünür.
+ *
+ * Sayfalar:
+ *   /       dil yönlendirme sayfası (renderRootHead / renderRootBody)
+ *   /tr/    Türkçe (renderHead / renderBody, locale "tr")
+ *   /en/    İngilizce (locale "en")
+ * İç bağlantılar göreli üretilir; böylece dist/ klasörü hangi kök altında
+ * sunulursa sunulsun çalışır. canonical, hreflang ve og:url mutlak adrestir.
  */
-import type { DemoItem, SiteConfig } from './site.config';
-import * as c from './content';
-import type { Service } from './content';
+import type { SiteConfig } from './site.config';
+import { LOCALES, TEXT, type Locale } from './content';
+import type { Demo, Segment, Service, SiteText } from './content/types';
 
 const ESCAPES: Record<string, string> = {
   '&': '&amp;',
@@ -20,223 +27,75 @@ export function escapeHtml(value: string): string {
 
 const EMAIL_RE = /^[^\s@<>"']+@[^\s@<>"']+\.[^\s@<>"']+$/;
 
-export function isValidEmail(value: string): boolean {
-  return EMAIL_RE.test(value);
+export function isValidEmail(value: string | null): value is string {
+  return value !== null && EMAIL_RE.test(value);
 }
 
-/** İletişim bölümünün içeriği. Adres yoksa ya da geçersizse mailto üretilmez. */
-export function renderContact(email: string | null): string {
-  if (email === null || !isValidEmail(email)) {
-    return `<p class="contact-fallback" data-testid="contact-fallback"><strong>${escapeHtml(
-      c.contact.fallback,
-    )}</strong> ${escapeHtml(c.contact.fallbackDetail)}</p>`;
+function base(config: SiteConfig): string | null {
+  return config.siteUrl ? config.siteUrl.replace(/\/$/, '') : null;
+}
+
+/** Bir dil sayfasının mutlak adresi (canonical/hreflang için). */
+export function pageUrl(config: SiteConfig, locale: Locale | 'root'): string | null {
+  const b = base(config);
+  if (!b) return null;
+  return locale === 'root' ? `${b}/` : `${b}/${locale}/`;
+}
+
+const MARK = `<svg class="mark" viewBox="0 0 32 32" width="28" height="28" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="7" class="mark-bg"/><path d="M11.5 24.5V8h6.2a5.4 5.4 0 0 1 0 10.8h-6.2" class="mark-p"/><circle cx="23.6" cy="23.2" r="2.6" class="mark-dot"/></svg>`;
+
+/* ------------------------------------------------------------------ head */
+
+function alternates(config: SiteConfig): string[] {
+  const out: string[] = [];
+  for (const l of LOCALES) {
+    const u = pageUrl(config, l);
+    if (u) out.push(`<link rel="alternate" hreflang="${l}" href="${escapeHtml(u)}" />`);
   }
-  const safe = escapeHtml(email);
-  return `<p class="contact-email">${escapeHtml(c.contact.emailLabel)}: <a href="mailto:${safe}">${safe}</a></p>
-      <p class="contact-detail">${escapeHtml(c.contact.detail)}</p>`;
+  const root = pageUrl(config, 'root');
+  if (root) out.push(`<link rel="alternate" hreflang="x-default" href="${escapeHtml(root)}" />`);
+  return out;
 }
 
-/** Örnek kartının alt kısmı: yayında değilse yalnızca bekleme notu. */
-export function renderDemoActions(item: DemoItem, published: boolean): string {
-  if (!published || !item.pdfUrl) {
-    return `<p class="demo-pending">${escapeHtml(c.demos.pendingNote)}</p>`;
-  }
-  return `<a class="button button-quiet" href="${escapeHtml(item.pdfUrl)}" type="application/pdf" download data-testid="demo-download">${escapeHtml(
-    c.demos.downloadLabel,
-  )}<span class="visually-hidden">: ${escapeHtml(item.title)}</span></a>`;
-}
-
-type Tone = 'ok' | 'no' | 'check';
-
-const PREVIEWS: Record<
-  DemoItem['preview'],
-  { label: string; head: string[]; rows: [string, string, Tone][] }
-> = {
-  eligibility: {
-    label:
-      'Temsilî tablo önizlemesi: kurum, nitelik ve uygunluk sütunları; satırlar yer tutucudur.',
-    head: ['Kurum', 'Nitelik', 'Durum'],
-    rows: [
-      ['Kurum A', 'Kod —', 'ok'],
-      ['Kurum B', 'Kod —', 'no'],
-      ['Kurum C', '—', 'check'],
-      ['Kurum D', 'Kod —', 'ok'],
-    ],
-  },
-  quality: {
-    label:
-      'Temsilî tablo önizlemesi: pozisyon, alan ve kaynakla karşılaştırma sütunları; satırlar yer tutucudur.',
-    head: ['Pozisyon', 'Alan', 'Kaynakla'],
-    rows: [
-      ['Pozisyon 1', '—', 'ok'],
-      ['Pozisyon 2', '—', 'no'],
-      ['Pozisyon 3', '—', 'ok'],
-      ['Pozisyon 4', '—', 'check'],
-    ],
-  },
-};
-
-const TONE_TEXT: Record<DemoItem['preview'], Record<Tone, string>> = {
-  eligibility: { ok: 'Uygun', no: 'Uygun değil', check: 'İncelenecek' },
-  quality: { ok: 'Eşleşiyor', no: 'Fark, kanıtlı', check: 'Doğrulanamadı' },
-};
-
-export function renderPreview(kind: DemoItem['preview']): string {
-  const p = PREVIEWS[kind];
-  const head = p.head.map((h) => `<span>${escapeHtml(h)}</span>`).join('');
-  const rows = p.rows
-    .map(
-      ([a, b, tone]) =>
-        `<div class="thumb-row"><span>${escapeHtml(a)}</span><span>${escapeHtml(
-          b,
-        )}</span><span class="tone tone-${tone}">${escapeHtml(TONE_TEXT[kind][tone])}</span></div>`,
-    )
-    .join('');
-  return `<div class="thumb" role="img" aria-label="${escapeHtml(p.label)}">
-    <div class="thumb-sheet" aria-hidden="true">
-      <div class="thumb-title"></div>
-      <div class="thumb-row thumb-head">${head}</div>
-      ${rows}
-      <div class="thumb-foot"><span></span><span></span></div>
-      <span class="thumb-stamp">Örnek</span>
-    </div>
-  </div>`;
-}
-
-function renderDemo(item: DemoItem, published: boolean): string {
-  const headingId = `demo-${item.id}`;
-  return `<article class="demo" aria-labelledby="${headingId}">
-    ${renderPreview(item.preview)}
-    <div class="demo-body">
-      <p class="badge">${escapeHtml(c.demos.badge)}</p>
-      <h3 id="${headingId}">${escapeHtml(item.title)}</h3>
-      <p>${escapeHtml(item.description)}</p>
-      ${renderDemoActions(item, published)}
-    </div>
-  </article>`;
-}
-
-function renderHeroFigure(): string {
-  const f = c.hero.figure;
-  const items = f.items
-    .map((item) => {
-      const ref = item.ref
-        ? ` <a class="ref" href="${item.ref.href}" aria-label="${escapeHtml(item.ref.label)}">[1]</a>`
-        : '';
-      return `<div class="ledger-row"><dt>${escapeHtml(item.term)}${ref}</dt><dd>${escapeHtml(item.desc)}</dd></div>`;
-    })
-    .join('');
-  return `<figure class="ledger" aria-labelledby="teslim-baslik">
-    <p class="ledger-title" id="teslim-baslik">${escapeHtml(f.title)}</p>
-    <dl>${items}</dl>
-    <figcaption>${escapeHtml(f.caption)}</figcaption>
-  </figure>`;
-}
-
-function renderService(s: Service): string {
-  return `<article class="service" aria-labelledby="${s.id}">
-      <h4 id="${s.id}">${escapeHtml(s.title)}</h4>
-      <div class="service-body">
-        <p>${escapeHtml(s.body)}</p>
-        <p class="service-label">${escapeHtml(c.services.deliverablesLabel)}</p>
-        <ul>${s.deliverables.map((d) => `<li>${escapeHtml(d)}</li>`).join('')}</ul>
-      </div>
-    </article>`;
-}
-
-function renderServices(): string {
-  const groups = c.services.groups
-    .map(
-      (g) => `<div class="service-group" aria-labelledby="grup-${g.id}" role="group">
-      <h3 class="group-title" id="grup-${g.id}">${escapeHtml(g.title)}</h3>
-      ${g.items.map(renderService).join('')}
-    </div>`,
-    )
-    .join('');
-  return `<section id="hizmetler" class="section" aria-labelledby="hizmetler-baslik">
-    <div class="section-head">
-      <h2 id="hizmetler-baslik">${escapeHtml(c.services.title)}</h2>
-      <p>${escapeHtml(c.services.intro)}</p>
-    </div>
-    <div class="services">${groups}</div>
-  </section>`;
-}
-
-function renderMethod(): string {
-  const steps = c.method.steps
-    .map((s) => `<li class="step"><h3>${escapeHtml(s.title)}</h3><p>${escapeHtml(s.body)}</p></li>`)
-    .join('');
-  const principles = c.method.principles
-    .map(
-      (p) =>
-        `<div id="${p.id}"><dt>${escapeHtml(p.title)}</dt><dd>${escapeHtml(p.body)}</dd></div>`,
-    )
-    .join('');
-  return `<section id="yontem" class="section" aria-labelledby="yontem-baslik">
-    <div class="section-head">
-      <h2 id="yontem-baslik">${escapeHtml(c.method.title)}</h2>
-      <p>${escapeHtml(c.method.intro)}</p>
-    </div>
-    <ol class="steps">${steps}</ol>
-    <dl class="principles">${principles}</dl>
-  </section>`;
-}
-
-function renderDemos(config: SiteConfig): string {
-  const cards = config.demos.items.map((d) => renderDemo(d, config.demos.published)).join('');
-  return `<section id="ornekler" class="section" aria-labelledby="ornekler-baslik">
-    <div class="section-head">
-      <h2 id="ornekler-baslik">${escapeHtml(c.demos.title)}</h2>
-      <p>${escapeHtml(c.demos.intro)}</p>
-    </div>
-    <div class="demos">${cards}</div>
-  </section>`;
-}
-
-function renderContactSection(config: SiteConfig): string {
-  return `<section id="iletisim" class="section section-contact" aria-labelledby="iletisim-baslik">
-    <div class="section-head">
-      <h2 id="iletisim-baslik">${escapeHtml(c.contact.title)}</h2>
-      <p>${escapeHtml(c.contact.intro)}</p>
-    </div>
-    <div class="contact">${renderContact(config.contactEmail)}</div>
-  </section>`;
-}
-
-export function renderHead(config: SiteConfig): string {
-  const title = `${config.brandName} | ${c.meta.titleSuffix}`;
+export function renderHead(config: SiteConfig, locale: Locale): string {
+  const t = TEXT[locale];
+  const title = `${config.brandName} | ${t.meta.titleSuffix}`;
+  const other = LOCALES.filter((l) => l !== locale).map((l) => TEXT[l].ogLocale);
   const parts = [
     `<title>${escapeHtml(title)}</title>`,
-    `<meta name="description" content="${escapeHtml(c.meta.description)}" />`,
-    `<meta name="theme-color" content="#1D4F7A" />`,
+    `<meta name="description" content="${escapeHtml(t.meta.description)}" />`,
+    `<meta name="theme-color" media="(prefers-color-scheme: light)" content="#eef1f1" />`,
+    `<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f1b24" />`,
     `<meta property="og:type" content="website" />`,
     `<meta property="og:site_name" content="${escapeHtml(config.brandName)}" />`,
     `<meta property="og:title" content="${escapeHtml(title)}" />`,
-    `<meta property="og:description" content="${escapeHtml(c.meta.description)}" />`,
-    `<meta property="og:locale" content="tr_TR" />`,
+    `<meta property="og:description" content="${escapeHtml(t.meta.description)}" />`,
+    `<meta property="og:locale" content="${t.ogLocale}" />`,
+    ...other.map((o) => `<meta property="og:locale:alternate" content="${o}" />`),
     `<meta name="twitter:card" content="summary_large_image" />`,
   ];
-  if (!config.indexable) {
-    parts.push('<meta name="robots" content="noindex, nofollow" />');
-  }
-  if (config.siteUrl) {
-    const base = config.siteUrl.replace(/\/$/, '');
-    parts.push(`<link rel="canonical" href="${escapeHtml(base)}/" />`);
-    parts.push(`<meta property="og:url" content="${escapeHtml(base)}/" />`);
-    parts.push(`<meta property="og:image" content="${escapeHtml(base + c.meta.ogImage)}" />`);
+  if (!config.indexable) parts.push('<meta name="robots" content="noindex, nofollow" />');
+  const self = pageUrl(config, locale);
+  const b = base(config);
+  if (self && b) {
+    parts.push(`<link rel="canonical" href="${escapeHtml(self)}" />`);
+    parts.push(...alternates(config));
+    parts.push(`<meta property="og:url" content="${escapeHtml(self)}" />`);
+    parts.push(`<meta property="og:image" content="${escapeHtml(`${b}/og-image.png`)}" />`);
     parts.push(`<meta property="og:image:width" content="1200" />`);
     parts.push(`<meta property="og:image:height" content="630" />`);
-    parts.push(`<meta property="og:image:alt" content="${escapeHtml(c.meta.ogImageAlt)}" />`);
+    parts.push(`<meta property="og:image:alt" content="${escapeHtml(t.meta.ogImageAlt)}" />`);
     const org: Record<string, unknown> = {
       '@context': 'https://schema.org',
       '@type': 'Organization',
       name: config.brandName,
       legalName: config.legalName,
-      url: `${base}/`,
-      logo: `${base}/apple-touch-icon.png`,
+      url: `${b}/`,
+      logo: `${b}/apple-touch-icon.png`,
+      description: t.meta.description,
       address: { '@type': 'PostalAddress', addressLocality: config.city, addressCountry: 'TR' },
     };
-    if (config.contactEmail && isValidEmail(config.contactEmail)) org.email = config.contactEmail;
+    if (isValidEmail(config.contactEmail)) org.email = config.contactEmail;
     // JSON-LD bir veri bloğudur (çalıştırılmaz); "<" kaçırılarak </script> kırılması önlenir.
     parts.push(
       `<script type="application/ld+json">${JSON.stringify(org).replace(/</g, '\\u003c')}</script>`,
@@ -245,53 +104,275 @@ export function renderHead(config: SiteConfig): string {
   return parts.join('\n    ');
 }
 
-function footerEmail(email: string | null): string {
-  if (email === null || !isValidEmail(email)) return '';
-  const safe = escapeHtml(email);
-  return `<p><a href="mailto:${safe}">${safe}</a></p>`;
+export function renderRootHead(config: SiteConfig): string {
+  const t = TEXT.en;
+  const parts = [
+    `<title>${escapeHtml(config.brandName)}</title>`,
+    `<meta name="description" content="${escapeHtml(t.meta.description)}" />`,
+    `<meta name="theme-color" content="#eef1f1" />`,
+  ];
+  if (!config.indexable) parts.push('<meta name="robots" content="noindex, nofollow" />');
+  parts.push(...alternates(config));
+  return parts.join('\n    ');
 }
 
-export function renderBody(config: SiteConfig, year = new Date().getFullYear()): string {
+/* ------------------------------------------------------------- pieces */
+
+function langSwitch(t: SiteText, prefix: string, extraClass = ''): string {
+  const items = LOCALES.map((l) => {
+    const current = l === t.locale ? ' aria-current="page"' : '';
+    return `<li><a href="${prefix}${l}/" hreflang="${l}" lang="${l}" data-locale="${l}"${current}><span aria-hidden="true">${l.toUpperCase()}</span><span class="visually-hidden">${escapeHtml(t.a11y.langNames[l])}</span></a></li>`;
+  }).join('');
+  return `<nav class="lang${extraClass ? ` ${extraClass}` : ''}" aria-label="${escapeHtml(t.a11y.langNav)}"><ul>${items}</ul></nav>`;
+}
+
+function mailto(email: string): string {
+  return `mailto:${escapeHtml(email)}`;
+}
+
+function renderHero(config: SiteConfig, t: SiteText): string {
+  const title = t.hero.title
+    .map((p) => {
+      const text = escapeHtml(p.text);
+      if (!p.note) return text;
+      return `<span class="claim">${text}<sup class="cite"><a href="#note-${p.note}" id="ref-${p.note}" aria-label="${escapeHtml(t.a11y.noteRef(p.note))}">${p.note}</a></sup></span>`;
+    })
+    .join('');
+  const notes = t.hero.notes
+    .map(
+      (n, i) =>
+        `<li id="note-${i + 1}" class="note"><a class="note-num" href="#ref-${i + 1}" aria-label="${escapeHtml(t.a11y.noteRef(i + 1))}">${i + 1}</a><p>${escapeHtml(n)}</p></li>`,
+    )
+    .join('');
+  const primary = isValidEmail(config.contactEmail)
+    ? `<a class="button button-primary" href="${mailto(config.contactEmail)}">${escapeHtml(t.hero.primaryCta)}</a>`
+    : `<a class="button button-primary" href="#contact">${escapeHtml(t.hero.primaryCta)}</a>`;
+  return `<section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <h1 id="hero-title" class="hero-title">${title}</h1>
+        <p class="lede">${escapeHtml(t.hero.lede(config.brandName, config.city))}</p>
+        <p class="actions">${primary}<a class="button button-quiet" href="${t.hero.secondaryCta.href}">${escapeHtml(t.hero.secondaryCta.label)}</a></p>
+      </div>
+      <aside class="hero-notes" aria-label="${escapeHtml(t.a11y.notesLabel)}"><ol>${notes}</ol></aside>
+    </section>`;
+}
+
+function renderService(s: Service, t: SiteText, featured: boolean): string {
+  return `<article class="service${featured ? ' service-featured' : ''}" aria-labelledby="svc-${s.id}">
+        <h3 id="svc-${s.id}">${escapeHtml(s.title)}</h3>
+        <p class="service-body">${escapeHtml(s.body)}</p>
+        <div class="service-meta">
+          <p class="meta-label">${escapeHtml(t.services.deliverablesLabel)}</p>
+          <ul>${s.deliverables.map((d) => `<li>${escapeHtml(d)}</li>`).join('')}</ul>
+          <p class="meta-label">${escapeHtml(t.services.stackLabel)}</p>
+          <p class="stack">${escapeHtml(s.stack)}</p>
+        </div>
+      </article>`;
+}
+
+function renderServices(t: SiteText): string {
+  const items = t.services.items.map((s, i) => renderService(s, t, i === 0)).join('');
+  return `<section id="services" class="section" aria-labelledby="services-title">
+      <div class="section-head">
+        <h2 id="services-title">${escapeHtml(t.services.title)}</h2>
+        <p>${escapeHtml(t.services.intro)}</p>
+      </div>
+      <div class="services">${items}</div>
+    </section>`;
+}
+
+function renderMethod(t: SiteText): string {
+  const steps = t.method.steps
+    .map((s) => `<li class="step"><h3>${escapeHtml(s.title)}</h3><p>${escapeHtml(s.body)}</p></li>`)
+    .join('');
+  const principles = t.method.principles
+    .map(
+      (p) =>
+        `<div id="${p.id}"><dt>${escapeHtml(p.title)}</dt><dd>${escapeHtml(p.body)}</dd></div>`,
+    )
+    .join('');
+  return `<section id="method" class="section" aria-labelledby="method-title">
+      <div class="section-head">
+        <h2 id="method-title">${escapeHtml(t.method.title)}</h2>
+        <p>${escapeHtml(t.method.intro)}</p>
+      </div>
+      <div class="method-body">
+        <ol class="steps">${steps}</ol>
+        <dl class="principles">${principles}</dl>
+      </div>
+    </section>`;
+}
+
+function total(segments: Segment[]): number {
+  return segments.reduce((n, s) => n + s.value, 0);
+}
+
+/** Toplamı küçük olan veri birim kareleriyle, büyük olan oransal çubukla çizilir. */
+export function renderChart(demo: Demo): string {
+  const sum = total(demo.segments);
+  const summary = `${demo.chartTitle}: ${demo.segments.map((s) => `${s.label} ${s.value}`).join(', ')}`;
+  const units = sum <= 120;
+  let shapes = '';
+  let viewBox: string;
+  if (units) {
+    const cols = 11;
+    const size = 18;
+    const gap = 4;
+    let i = 0;
+    for (const s of demo.segments) {
+      for (let k = 0; k < s.value; k++, i++) {
+        const x = (i % cols) * (size + gap);
+        const y = Math.floor(i / cols) * (size + gap);
+        shapes += `<rect class="seg seg-${s.key}" x="${x}" y="${y}" width="${size}" height="${size}" rx="3"/>`;
+      }
+    }
+    const rows = Math.ceil(sum / cols);
+    viewBox = `0 0 ${cols * (size + gap) - gap} ${rows * (size + gap) - gap}`;
+  } else {
+    const width = 600;
+    const height = 44;
+    let x = 0;
+    for (const s of demo.segments) {
+      const w = (s.value / sum) * width;
+      shapes += `<rect class="seg seg-${s.key}" x="${x.toFixed(2)}" y="0" width="${Math.max(w - 3, 1).toFixed(2)}" height="${height}" rx="3"/>`;
+      x += w;
+    }
+    viewBox = `0 0 ${width} ${height}`;
+  }
+  const legend = demo.segments
+    .map(
+      (s) =>
+        `<li><svg class="swatch" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" focusable="false"><rect class="seg seg-${s.key}" width="12" height="12" rx="2"/></svg><span class="legend-value">${s.value}</span> <span class="legend-label">${escapeHtml(s.label)}</span></li>`,
+    )
+    .join('');
+  return `<figure class="chart chart-${units ? 'units' : 'bar'}">
+          <figcaption>${escapeHtml(demo.chartTitle)}</figcaption>
+          <svg class="chart-svg" viewBox="${viewBox}" role="img" aria-label="${escapeHtml(summary)}">${shapes}</svg>
+          <ul class="legend">${legend}</ul>
+        </figure>`;
+}
+
+export function renderDemoActions(
+  demo: Demo,
+  t: SiteText,
+  published: boolean,
+  prefix: string,
+): string {
+  if (!published || !demo.pdf)
+    return `<p class="demo-pending">${escapeHtml(t.work.pendingNote)}</p>`;
+  return `<a class="button button-quiet demo-download" href="${prefix}ornekler/${escapeHtml(demo.pdf)}" type="application/pdf" download data-testid="demo-download">${escapeHtml(demo.pdfLabel)}<span class="visually-hidden">: ${escapeHtml(demo.title)}</span> <span class="download-note">(${escapeHtml(t.work.downloadNote)})</span></a>`;
+}
+
+function renderDemo(demo: Demo, t: SiteText, published: boolean, prefix: string): string {
+  const facts = demo.facts
+    .map((f) => `<div><dt>${escapeHtml(f.value)}</dt><dd>${escapeHtml(f.label)}</dd></div>`)
+    .join('');
+  return `<article class="demo" aria-labelledby="demo-${demo.id}">
+        <div class="demo-text">
+          <h3 id="demo-${demo.id}">${escapeHtml(demo.title)}</h3>
+          <p>${escapeHtml(demo.body)}</p>
+          <dl class="facts">${facts}</dl>
+          <p class="demo-source">${escapeHtml(demo.source)}</p>
+          ${renderDemoActions(demo, t, published, prefix)}
+        </div>
+        ${renderChart(demo)}
+      </article>`;
+}
+
+function renderWork(config: SiteConfig, t: SiteText, prefix: string): string {
+  return `<section id="work" class="section" aria-labelledby="work-title">
+      <div class="section-head">
+        <h2 id="work-title">${escapeHtml(t.work.title)}</h2>
+        <p>${escapeHtml(t.work.intro)}</p>
+      </div>
+      <div class="demos">${t.work.items.map((d) => renderDemo(d, t, config.demosPublished, prefix)).join('')}</div>
+    </section>`;
+}
+
+export function renderContact(config: SiteConfig, t: SiteText): string {
+  if (!isValidEmail(config.contactEmail)) {
+    return `<p class="contact-fallback" data-testid="contact-fallback">${escapeHtml(t.contact.fallback)}</p>`;
+  }
+  const rows = [
+    `<div><dt>${escapeHtml(t.contact.emailLabel)}</dt><dd><a href="${mailto(config.contactEmail)}">${escapeHtml(config.contactEmail)}</a></dd></div>`,
+  ];
+  if (isValidEmail(config.partnershipsEmail)) {
+    rows.push(
+      `<div><dt>${escapeHtml(t.contact.partnershipsLabel)}</dt><dd><a href="${mailto(config.partnershipsEmail)}">${escapeHtml(config.partnershipsEmail)}</a></dd></div>`,
+    );
+  }
+  return `<a class="button button-primary button-large" href="${mailto(config.contactEmail)}">${escapeHtml(t.contact.cta)}</a>
+        <dl class="contact-list">${rows.join('')}</dl>`;
+}
+
+function renderContactSection(config: SiteConfig, t: SiteText): string {
+  return `<section id="contact" class="contact" aria-labelledby="contact-title">
+      <div class="wrap contact-inner">
+        <h2 id="contact-title">${escapeHtml(t.contact.title)}</h2>
+        <p class="contact-body">${escapeHtml(t.contact.body)}</p>
+        <div class="contact-actions">${renderContact(config, t)}</div>
+      </div>
+    </section>`;
+}
+
+/* ---------------------------------------------------------------- pages */
+
+export function renderBody(
+  config: SiteConfig,
+  locale: Locale,
+  year = new Date().getFullYear(),
+): string {
+  const t = TEXT[locale];
+  const prefix = '../';
   const brand = escapeHtml(config.brandName);
-  const navLinks = c.nav
+  const navLinks = t.nav
     .map((n) => `<li><a href="${n.href}">${escapeHtml(n.label)}</a></li>`)
     .join('');
-  return `<a class="skip-link" href="#icerik">İçeriğe geç</a>
-  <header class="site-header">
-    <div class="wrap header-inner">
-      <a class="brand" href="#top"><svg class="brand-mark" viewBox="0 0 32 32" width="24" height="24" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="7" fill="#1D4F7A"/><path d="M11.5 24.5V8h6.2a5.4 5.4 0 0 1 0 10.8h-6.2" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="23.6" cy="23.2" r="2.6" fill="#E3B25A"/></svg><span>${brand}</span></a>
-      <nav aria-label="Ana menü"><ul class="nav">${navLinks}</ul></nav>
+  const email = isValidEmail(config.contactEmail)
+    ? `<p><a href="${mailto(config.contactEmail)}">${escapeHtml(config.contactEmail)}</a></p>`
+    : '';
+  return `<a class="skip-link" href="#content">${escapeHtml(t.a11y.skip)}</a>
+  <header class="masthead">
+    <div class="wrap masthead-inner">
+      <a class="brand" href="#hero-title">${MARK}<span>${brand}</span></a>
+      <nav class="primary-nav" aria-label="${escapeHtml(t.a11y.mainNav)}"><ul>${navLinks}</ul></nav>
+      ${langSwitch(t, prefix)}
     </div>
   </header>
-  <main id="icerik" tabindex="-1">
+  <main id="content" tabindex="-1">
     <div class="wrap">
-      <section class="hero" aria-labelledby="top">
-        <div class="hero-text">
-          <h1 id="top">${escapeHtml(c.hero.title)}</h1>
-          <p class="lede">${escapeHtml(c.hero.lede(config.brandName, config.city))}</p>
-          <p class="actions">
-            <a class="button" href="${c.hero.primaryCta.href}">${escapeHtml(c.hero.primaryCta.label)}</a>
-            <a class="button button-quiet" href="${c.hero.secondaryCta.href}">${escapeHtml(c.hero.secondaryCta.label)}</a>
-          </p>
-        </div>
-        ${renderHeroFigure()}
-      </section>
-      ${renderServices()}
-      ${renderMethod()}
-      ${renderDemos(config)}
-      ${renderContactSection(config)}
+      ${renderHero(config, t)}
+      ${renderServices(t)}
+      ${renderMethod(t)}
+      ${renderWork(config, t, prefix)}
     </div>
+    ${renderContactSection(config, t)}
   </main>
   <footer class="site-footer">
     <div class="wrap footer-inner">
       <div class="footer-brand">
-        <p class="footer-name">${brand}</p>
-        <p>${escapeHtml(c.footer.legal(config.brandName, config.legalName))} ${escapeHtml(config.city)}, Türkiye.</p>
-        ${footerEmail(config.contactEmail)}
+        <p class="footer-name">${MARK}<span>${brand}</span></p>
+        <p>${escapeHtml(t.footer.legal(config.brandName, config.legalName))} ${escapeHtml(t.footer.place)}.</p>
+        ${email}
       </div>
-      <nav aria-label="${escapeHtml(c.footer.navLabel)}"><ul class="footer-nav">${navLinks}</ul></nav>
-      <p class="footer-en" lang="en">${escapeHtml(c.footer.english(config.brandName))}</p>
+      <div class="footer-links">
+        <nav class="footer-nav" aria-label="${escapeHtml(t.a11y.footerNav)}"><ul>${navLinks}</ul></nav>
+        ${langSwitch(t, prefix, 'lang-footer')}
+      </div>
       <p class="footer-copy">© ${year} ${brand}</p>
     </div>
   </footer>`;
+}
+
+export function renderRootBody(config: SiteConfig): string {
+  const brand = escapeHtml(config.brandName);
+  const links = LOCALES.map((l) => {
+    const t = TEXT[l];
+    return `<li><a class="root-choice" href="./${l}/" hreflang="${l}" lang="${l}" data-locale="${l}">${escapeHtml(t.a11y.langNames[l])}</a></li>`;
+  }).join('');
+  return `<main class="root" id="content">
+    <p class="root-brand">${MARK}<span>${brand}</span></p>
+    <p class="root-text"><span lang="tr">Dilinizi seçin.</span> <span lang="en">Choose your language.</span></p>
+    <ul class="root-list">${links}</ul>
+  </main>`;
 }

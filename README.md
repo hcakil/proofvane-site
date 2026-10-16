@@ -26,33 +26,50 @@ npm run preview       # dist/ klasörünü yerelde sun (http://localhost:4173)
 npm run lint          # ESLint: TypeScript + CSS (@eslint/css), uyarı da hata sayılır
 npm run format:check  # Prettier denetimi (düzeltmek için: npm run format)
 npm test              # Vitest birim testleri
-npm run test:e2e      # Playwright duman testi (önce build alır, preview’a karşı çalışır)
-npm run screenshots   # 1280px / 390px, açık / koyu ekran görüntüleri -> screenshots/
+npm run test:e2e      # Playwright: duman, dil, SEO, erişilebilirlik (axe) testleri
+npm run screenshots   # TR/EN, 1440px / 390px, açık / koyu ekran görüntüleri -> screenshots/
 ```
 
 Playwright tarayıcısı yoksa bir kez `npx playwright install chromium` çalıştırın.
 
-## Marka, alan adı ve e-posta nasıl değiştirilir
+## Sayfalar ve diller
 
-Hepsi tek dosyada: `src/site.config.ts`.
+| Adres  | Kaynak şablon   | İçerik                 |
+| ------ | --------------- | ---------------------- |
+| `/`    | `index.html`    | Dil yönlendirme ekranı |
+| `/tr/` | `tr/index.html` | `src/content/tr.ts`    |
+| `/en/` | `en/index.html` | `src/content/en.ts`    |
 
-| Alan              | Şu anki değer             | Etkisi                                                        |
-| ----------------- | ------------------------- | ------------------------------------------------------------- |
-| `brandName`       | `"Proofvane"`             | Başlık, üst bilgi, giriş metni, alt bilgi, `<title>`, JSON-LD |
-| `legalName`       | `"HCSoft"`                | Alt bilgide ticari unvan, JSON-LD `legalName`                 |
-| `siteUrl`         | `"https://proofvane.com"` | canonical, `og:url`, `og:image`, JSON-LD                      |
-| `contactEmail`    | `"hello@proofvane.com"`   | İletişim ve alt bilgide `mailto`; `null` iken “yakında” yazar |
-| `indexable`       | `true`                    | `false` iken `noindex, nofollow` eklenir                      |
-| `demos.published` | `true`                    | `false` iken indirme düğmeleri hiç üretilmez                  |
+`/` adresinde `src/root.ts` şu sırayla karar verir: daha önce seçilmiş dil
+(`localStorage` anahtarı `proofvane.lang`), yoksa tarayıcının dil tercih
+listesindeki ilk dil (`navigator.languages`; işletim sistemi dili değil).
+Türkçe ise `/tr/`, diğer tüm dillerde `/en/`. Betik çalışmazsa ekranda iki
+bağlantı görünür. `/tr/` ve `/en/` sayfalarında otomatik yönlendirme yoktur;
+her sayfadaki TR/EN seçici tercihi kaydeder.
+
+Her dil sayfası kendi `title`, `description`, Open Graph, `canonical` ve
+`hreflang` (tr, en, x-default) etiketlerini üretir; `public/sitemap.xml`
+iki dili `xhtml:link` alternatifleriyle listeler.
+
+## Marka, alan adı ve e-posta
+
+Hepsi `src/site.config.ts` içinde: `brandName`, `legalName` (HCSoft),
+`siteUrl`, `contactEmail`, `partnershipsEmail`, `indexable`, `demosPublished`.
 
 Yayındaki örnekler yalnızca **tek sayfalık özetlerdir**
-(`public/ornekler/proofvane-ornek-*.pdf`). Ayrıntılı raporlar bu repoya
-konmaz; `tests/forbidden-phrases.test.ts` klasörde yalnız bu iki dosyanın
-bulunduğunu ve her birinin tek sayfa olduğunu denetler. `robots.txt`
-klasörü taramaya kapatır, `_headers` `X-Robots-Tag: noindex` ekler.
+(`public/ornekler/`, TR ve EN). Ayrıntılı raporlar bu repoya konmaz;
+`tests/forbidden-phrases.test.ts` klasörde yalnız bu dört dosyanın
+bulunduğunu ve her birinin tek sayfa olduğunu denetler.
+`tests/content.test.ts` grafiklerdeki sayıların doğrulanmış sonuçlarla ve
+iki dilde birbiriyle aynı olduğunu denetler.
 
-Sayfa metinleri `src/content.ts` içindedir. Giriş metnindeki şehir eki
-(“Ankara’da”) şehir adına göre elle kontrol edilmelidir.
+## Tasarım
+
+“Kaynak notu”: hero’daki üç iddia dipnot işaretleriyle kenar notlarına
+bağlanır. Yazı tipleri Newsreader (başlık) ve Schibsted Grotesk (metin),
+`@fontsource-variable` ile kendi sunucumuzdan yüklenir (harici istek yok,
+CSP `'self'`). Açık/koyu tema `prefers-color-scheme` ile; tek açılış
+animasyonu `prefers-reduced-motion: reduce` iken kapalıdır.
 
 ## Yayın (Cloudflare Pages)
 

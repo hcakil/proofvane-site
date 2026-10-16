@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { renderBody, renderHead } from '../src/render';
+import { LOCALES } from '../src/content';
 import { siteConfig } from '../src/site.config';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
@@ -23,6 +24,13 @@ export const FORBIDDEN = [
   'referanslarımız',
   'binlerce',
   'loiai',
+  'guarantee',
+  'always up to date',
+  'real-time',
+  '100%',
+  'our clients',
+  'thousands of',
+  'world-class',
 ];
 
 function normalize(text: string): string {
@@ -40,12 +48,12 @@ describe('yasaklı ifadeler', () => {
     expect(findForbidden('ATANMA  GARANTİSİ')).toContain('atanma garantisi');
   });
 
-  it('üretilen sayfa yasaklı ifade içermez', () => {
-    const html = renderHead(siteConfig) + renderBody(siteConfig);
+  it.each(LOCALES)('üretilen %s sayfası yasaklı ifade içermez', (l) => {
+    const html = renderHead(siteConfig, l) + renderBody(siteConfig, l);
     expect(findForbidden(html)).toEqual([]);
   });
 
-  it.each(['src/content.ts', 'src/site.config.ts', 'index.html'])(
+  it.each(['src/content/tr.ts', 'src/content/en.ts', 'src/site.config.ts', 'index.html'])(
     '%s yasaklı ifade içermez',
     (file) => {
       expect(findForbidden(readFileSync(`${root}${file}`, 'utf8'))).toEqual([]);
@@ -53,14 +61,18 @@ describe('yasaklı ifadeler', () => {
   );
 
   it('kaynak metinlerde gerçek dışı sosyal kanıt alanı yok', () => {
-    const content = readFileSync(`${root}src/content.ts`, 'utf8');
-    expect(content).not.toMatch(/testimonial|logos?\b|clients?\b/i);
+    for (const f of ['tr', 'en']) {
+      const content = readFileSync(`${root}src/content/${f}.ts`, 'utf8');
+      expect(content).not.toMatch(/testimonial|logos?\b|clients?\b|trusted by|happy customers/i);
+    }
   });
 
-  const built = `${root}dist/index.html`;
-  it.skipIf(!existsSync(built))('derlenmiş dist/index.html yasaklı ifade içermez', () => {
-    expect(findForbidden(readFileSync(built, 'utf8'))).toEqual([]);
-  });
+  for (const page of ['index.html', 'tr/index.html', 'en/index.html']) {
+    const built = `${root}dist/${page}`;
+    it.skipIf(!existsSync(built))(`derlenmiş dist/${page} yasaklı ifade içermez`, () => {
+      expect(findForbidden(readFileSync(built, 'utf8'))).toEqual([]);
+    });
+  }
 });
 
 describe('yayınlanan dosyalar', () => {
@@ -70,6 +82,8 @@ describe('yayınlanan dosyalar', () => {
     expect(files.sort()).toEqual([
       'proofvane-ornek-ilan-veri-dogruluk.pdf',
       'proofvane-ornek-tercih-on-kontrol.pdf',
+      'proofvane-sample-listing-accuracy-en.pdf',
+      'proofvane-sample-placement-precheck-en.pdf',
     ]);
     for (const f of files) {
       const pdf = readFileSync(`${root}public/ornekler/${f}`).toString('latin1');
