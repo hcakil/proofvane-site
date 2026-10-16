@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
 
 const TITLES = {
-  tr: 'Proofvane | Yazılım mühendisliği stüdyosu, Ankara',
-  en: 'Proofvane | Software engineering studio, Ankara',
+  tr: 'Proofvane | Bağımsız yazılım mühendisliği stüdyosu',
+  en: 'Proofvane | Independent software engineering studio',
 } as const;
 
 for (const l of ['tr', 'en'] as const) {

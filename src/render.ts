@@ -64,8 +64,8 @@ export function renderHead(config: SiteConfig, locale: Locale): string {
   const parts = [
     `<title>${escapeHtml(title)}</title>`,
     `<meta name="description" content="${escapeHtml(t.meta.description)}" />`,
-    `<meta name="theme-color" media="(prefers-color-scheme: light)" content="#eef1f1" />`,
-    `<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f1b24" />`,
+    `<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f2f0eb" />`,
+    `<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#111214" />`,
     `<meta property="og:type" content="website" />`,
     `<meta property="og:site_name" content="${escapeHtml(config.brandName)}" />`,
     `<meta property="og:title" content="${escapeHtml(title)}" />`,
@@ -109,7 +109,7 @@ export function renderRootHead(config: SiteConfig): string {
   const parts = [
     `<title>${escapeHtml(config.brandName)}</title>`,
     `<meta name="description" content="${escapeHtml(t.meta.description)}" />`,
-    `<meta name="theme-color" content="#eef1f1" />`,
+    `<meta name="theme-color" content="#f2f0eb" />`,
   ];
   if (!config.indexable) parts.push('<meta name="robots" content="noindex, nofollow" />');
   parts.push(...alternates(config));
@@ -130,59 +130,63 @@ function mailto(email: string): string {
   return `mailto:${escapeHtml(email)}`;
 }
 
-function renderHeroVisual(t: SiteText): string {
-  const v = t.hero.visual;
-  const steps = v.pipeline.steps
+/** Tarayıcıdaki demo betiğinin (src/demo.ts) kullandığı dil metinleri; JSON veri bloğu, çalıştırılmaz. */
+function demoText(t: SiteText): string {
+  const d = t.hero.demo;
+  const p = t.showcases.mobile.pipeline;
+  const data = {
+    app: d.app,
+    controls: d.controls,
+    log: d.log,
+    pipeline: { idle: p.idle, running: p.running, passed: p.passed, blocked: p.blocked },
+  };
+  return `<script type="application/json" id="demo-text">${JSON.stringify(data).replace(/</g, '\\u003c')}</script>`;
+}
+
+function renderSyncDemo(t: SiteText): string {
+  const d = t.hero.demo;
+  const tasks = d.app.tasks
     .map(
-      (s) =>
-        `<li class="flow-step flow-${s.state}"><span class="flow-dot"></span><span class="flow-label">${escapeHtml(s.label)}</span><span class="flow-value">${escapeHtml(s.value)}</span></li>`,
+      (task) =>
+        `<li class="task" data-task="${escapeHtml(task.id)}" data-title="${escapeHtml(task.title)}"><span class="task-check" aria-hidden="true"></span><span class="task-text"><span class="task-title">${escapeHtml(task.title)}</span><span class="task-meta">${escapeHtml(task.meta)}</span><span class="task-state" data-state></span></span><button type="button" class="task-btn" data-complete>${escapeHtml(d.app.action)}<span class="visually-hidden">: ${escapeHtml(task.title)}</span></button></li>`,
     )
     .join('');
-  const lines = v.console.lines
+  const nodes = d.nodes
     .map(
-      (l, i) =>
-        `<li class="log-line${l.state ? ` log-${l.state}` : ''}"><span class="log-n">${String(i + 1).padStart(2, '0')}</span><code>${escapeHtml(l.text)}</code></li>`,
+      (n) =>
+        `<li class="node node-${n.id}" data-node="${n.id}"><span class="node-label">${escapeHtml(n.label)}</span><code class="node-detail">${escapeHtml(n.detail)}</code></li>`,
     )
     .join('');
-  const alertRows = v.app.alertRows
-    .map(
-      (r) =>
-        `<div class="alert-row"><dt>${escapeHtml(r.source)}</dt><dd>${escapeHtml(r.value)}</dd></div>`,
-    )
-    .join('');
-  return `<figure class="stage" aria-labelledby="stage-caption">
-        <p class="visually-hidden">${escapeHtml(v.label)}</p>
-        <div class="stage-scene" aria-hidden="true">
-          <div class="glow glow-a"></div>
-          <div class="glow glow-b"></div>
-          <div class="win win-flow">
-            <div class="win-bar"><span></span><span></span><span></span><p>${escapeHtml(v.pipeline.title)}</p></div>
-            <ol class="flow">${steps}</ol>
-          </div>
-          <div class="win win-log">
-            <div class="win-bar"><span></span><span></span><span></span><p>${escapeHtml(v.console.title)}</p></div>
-            <ol class="log">${lines}</ol>
-          </div>
-          <svg class="wire" viewBox="0 0 400 200" preserveAspectRatio="none" focusable="false"><path d="M396 10 C 250 10, 150 190, 4 190"/></svg>
-          <div class="phone">
-            <div class="phone-screen">
-              <div class="app-bar"><span class="app-title">${escapeHtml(v.app.title)}</span><span class="app-avatar"></span></div>
-              <div class="app-card app-card-focus">
-                <p class="app-card-title">${escapeHtml(v.app.listingTitle)}</p>
-                <p class="app-card-meta">${escapeHtml(v.app.listingMeta)}</p>
-                <div class="app-alert">
-                  <p class="app-alert-title"><span class="pulse"></span>${escapeHtml(v.app.alertTitle)}</p>
-                  <dl>${alertRows}</dl>
-                  <p class="app-alert-action">${escapeHtml(v.app.action)}</p>
-                </div>
+  return `<figure class="sync" data-demo="sync" aria-labelledby="sync-caption">
+        <p class="visually-hidden">${escapeHtml(d.label)}</p>
+        <div class="sync-stage" data-stage>
+          <svg class="sync-wires" data-wires aria-hidden="true" focusable="false"></svg>
+          <div class="device" data-node="app">
+            <div class="device-screen">
+              <div class="app-status"><span class="app-time" aria-hidden="true">9:41</span><span class="app-net" data-net>${escapeHtml(d.app.online)}</span></div>
+              <div class="app-head">
+                <p class="app-title">${escapeHtml(d.app.title)}</p>
+                <p class="app-sub">${escapeHtml(d.app.subtitle)}</p>
               </div>
-              <div class="app-card app-card-ghost"><span></span><span></span></div>
-              <div class="app-card app-card-ghost"><span></span><span></span></div>
-              <div class="app-tabs"><span></span><span></span><span></span><span></span></div>
+              <ul class="tasks">${tasks}</ul>
+              <p class="app-badge" data-badge>${escapeHtml(d.app.synced)}</p>
+              <div class="app-tabbar" aria-hidden="true"><span></span><span></span><span></span></div>
+            </div>
+          </div>
+          <div class="sync-side">
+            <ol class="nodes">${nodes}</ol>
+            <div class="sync-log">
+              <p class="sync-log-title">${escapeHtml(d.log.title)}</p>
+              <ol class="log" data-log aria-live="polite"><li class="log-idle">${escapeHtml(d.log.idle)}</li></ol>
             </div>
           </div>
         </div>
-        <figcaption id="stage-caption" class="stage-caption">${escapeHtml(v.caption)}</figcaption>
+        <div class="sync-panel">
+          <button type="button" class="chip" data-network aria-pressed="false">${escapeHtml(d.controls.networkOff)}</button>
+          <button type="button" class="chip chip-quiet" data-reset>${escapeHtml(d.controls.reset)}</button>
+          <p class="sync-hint">${escapeHtml(d.controls.hint)}</p>
+        </div>
+        <figcaption id="sync-caption" class="sync-caption">${escapeHtml(d.caption)}</figcaption>
       </figure>`;
 }
 
@@ -190,16 +194,91 @@ function renderHero(config: SiteConfig, t: SiteText): string {
   const primary = isValidEmail(config.contactEmail)
     ? `<a class="button button-primary" href="${mailto(config.contactEmail)}">${escapeHtml(t.hero.primaryCta)}</a>`
     : `<a class="button button-primary" href="#contact">${escapeHtml(t.hero.primaryCta)}</a>`;
-  const caps = t.hero.capabilities.map((c) => `<li>${escapeHtml(c)}</li>`).join('');
+  const caps = t.hero.capabilities
+    .map(
+      (c, i) =>
+        `<li class="cap cap-${escapeHtml(c.id)}"><span class="cap-n">${String(i + 1).padStart(2, '0')}</span><span class="cap-label">${escapeHtml(c.label)}</span><span class="cap-detail">${escapeHtml(c.detail)}</span></li>`,
+    )
+    .join('');
   return `<section class="hero" aria-labelledby="hero-title">
       <div class="wrap hero-grid">
         <div class="hero-copy">
+          <p class="eyebrow">${escapeHtml(t.hero.eyebrow)}</p>
           <h1 id="hero-title" class="hero-title">${escapeHtml(t.hero.title)}</h1>
           <p class="lede">${escapeHtml(t.hero.lede(config.brandName, config.city))}</p>
           <p class="actions">${primary}<a class="button button-ghost" href="${t.hero.secondaryCta.href}">${escapeHtml(t.hero.secondaryCta.label)}</a></p>
-          <ul class="caps">${caps}</ul>
         </div>
-        ${renderHeroVisual(t)}
+        <ul class="caps">${caps}</ul>
+        ${renderSyncDemo(t)}
+      </div>
+    </section>`;
+}
+
+function kicker(index: string, label: string): string {
+  return `<p class="kicker"><span class="kicker-n">${escapeHtml(index)}</span>${escapeHtml(label)}</p>`;
+}
+
+function renderMobileShowcase(t: SiteText): string {
+  const m = t.showcases.mobile;
+  const p = m.pipeline;
+  const stages = p.stages
+    .map(
+      (s) =>
+        `<li class="pstage" data-pstage="${escapeHtml(s.id)}"><span class="pstage-dot" aria-hidden="true"></span><span class="pstage-label">${escapeHtml(s.label)}</span><span class="pstage-detail">${escapeHtml(s.detail)}</span></li>`,
+    )
+    .join('');
+  const roll = p.rollout.map((r) => `<li data-roll>${escapeHtml(r)}</li>`).join('');
+  const points = m.points.map((x) => `<li>${escapeHtml(x)}</li>`).join('');
+  return `<section id="work" class="showcase showcase-mobile" aria-labelledby="sc-mobile-title">
+      <div class="wrap showcase-grid">
+        <div class="showcase-head">
+          ${kicker(m.index, m.kicker)}
+          <h2 id="sc-mobile-title">${escapeHtml(m.title)}</h2>
+          <p class="showcase-body">${escapeHtml(m.body)}</p>
+          <ul class="points">${points}</ul>
+          <p class="stack"><span class="meta-label">${escapeHtml(t.services.stackLabel)}</span> ${escapeHtml(m.stack)}</p>
+          <p class="status status-concept">${escapeHtml(m.status)}</p>
+        </div>
+        <figure class="pipe" data-demo="pipeline" data-fail-at="${escapeHtml(p.failAt)}" aria-labelledby="pipe-window">
+          <div class="pipe-bar"><span class="pipe-window" id="pipe-window">${escapeHtml(p.window)}</span><span class="pipe-status" data-pipe-status aria-live="polite">${escapeHtml(p.idle)}</span></div>
+          <ol class="pstages">${stages}</ol>
+          <p class="pipe-failure" data-pipe-failure hidden><code>${escapeHtml(p.failure)}</code></p>
+          <div class="rollout">
+            <p class="rollout-label">${escapeHtml(p.rolloutLabel)}</p>
+            <ol class="rollout-steps">${roll}</ol>
+            <p class="rollout-gate" data-gate hidden>${escapeHtml(p.gate)}</p>
+          </div>
+          <p class="pipe-controls"><button type="button" class="button button-primary" data-run>${escapeHtml(p.run)}</button><button type="button" class="button button-ghost" data-regress>${escapeHtml(p.regress)}</button></p>
+        </figure>
+      </div>
+    </section>`;
+}
+
+function renderSystemsShowcase(t: SiteText): string {
+  const s = t.showcases.systems;
+  const flow = s.flow
+    .map(
+      (f, i) =>
+        `<li><span class="flow-n">${String(i + 1).padStart(2, '0')}</span><span class="flow-label">${escapeHtml(f.label)}</span><span class="flow-detail">${escapeHtml(f.detail)}</span></li>`,
+    )
+    .join('');
+  const facts = s.facts
+    .map(
+      (f) =>
+        `<li><span class="fact-value">${escapeHtml(f.value)}</span><span class="fact-label">${escapeHtml(f.label)}</span></li>`,
+    )
+    .join('');
+  return `<section id="systems" class="showcase showcase-systems" aria-labelledby="sc-systems-title">
+      <div class="wrap">
+        <div class="showcase-head showcase-head-wide">
+          ${kicker(s.index, s.kicker)}
+          <h2 id="sc-systems-title">${escapeHtml(s.title)}</h2>
+          <p class="showcase-body">${escapeHtml(s.body)}</p>
+          <p class="status status-real">${escapeHtml(s.status)}</p>
+        </div>
+        <ol class="flow-rail">${flow}</ol>
+        <ul class="facts">${facts}</ul>
+        <p class="stack"><span class="meta-label">${escapeHtml(t.services.stackLabel)}</span> ${escapeHtml(s.stack)}</p>
       </div>
     </section>`;
 }
@@ -360,11 +439,13 @@ function renderDemo(demo: Demo, t: SiteText, published: boolean, prefix: string)
 }
 
 function renderWork(config: SiteConfig, t: SiteText, prefix: string): string {
-  return `<section id="work" class="work" aria-labelledby="work-title">
+  return `<section id="data-work" class="showcase showcase-data" aria-labelledby="work-title">
       <div class="wrap">
-        <div class="work-head">
+        <div class="showcase-head showcase-head-wide">
+          ${kicker(t.work.index, t.work.kicker)}
           <h2 id="work-title">${escapeHtml(t.work.title)}</h2>
-          <p>${escapeHtml(t.work.intro)}</p>
+          <p class="showcase-body">${escapeHtml(t.work.intro)}</p>
+          <p class="status status-real">${escapeHtml(t.work.status)}</p>
         </div>
         <div class="cases">${t.work.items.map((d) => renderDemo(d, t, config.demosPublished, prefix)).join('')}</div>
       </div>
@@ -414,7 +495,7 @@ export function renderBody(
     ? `<p><a href="${mailto(config.contactEmail)}">${escapeHtml(config.contactEmail)}</a></p>`
     : '';
   return `<a class="skip-link" href="#content">${escapeHtml(t.a11y.skip)}</a>
-  <header class="masthead dark-zone">
+  <header class="masthead">
     <div class="wrap masthead-inner">
       <a class="brand" href="#hero-title">${MARK}<span>${brand}</span></a>
       <nav class="primary-nav" aria-label="${escapeHtml(t.a11y.mainNav)}"><ul>${navLinks}</ul></nav>
@@ -422,10 +503,10 @@ export function renderBody(
     </div>
   </header>
   <main id="content" tabindex="-1">
-    <div class="dark-zone">
-      ${renderHero(config, t)}
-      ${renderWork(config, t, prefix)}
-    </div>
+    ${renderHero(config, t)}
+    ${renderMobileShowcase(t)}
+    ${renderSystemsShowcase(t)}
+    ${renderWork(config, t, prefix)}
     <div class="wrap">
       ${renderServices(t)}
       ${renderMethod(t)}
@@ -445,7 +526,8 @@ export function renderBody(
       </div>
       <p class="footer-copy">© ${year} ${brand}</p>
     </div>
-  </footer>`;
+  </footer>
+  ${demoText(t)}`;
 }
 
 export function renderRootBody(config: SiteConfig): string {

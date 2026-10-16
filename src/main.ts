@@ -1,10 +1,12 @@
 // Dil sayfaları (/tr/, /en/). İçerik derlemede statik üretilir (vite.config.ts);
-// bu betik yalnızca yazı tiplerini/stilleri yükler ve dil seçimini hatırlar.
+// bu betik yazı tiplerini/stilleri yükler, dil seçimini hatırlar ve iki küçük
+// canlı gösterimi (src/demo.ts) başlatır.
 // Bu sayfalarda otomatik dil yönlendirmesi YOKTUR: /en/ ya da /tr/ adresine
 // doğrudan gelen ziyaretçi o sayfada kalır.
 import '@fontsource-variable/geist';
 import '@fontsource-variable/geist-mono';
 import './styles.css';
+import { initDemos } from './demo';
 import { isLocale, writeStored } from './locale';
 
 function safeStorage(): Storage | undefined {
@@ -22,3 +24,4 @@ document.addEventListener('click', (event) => {
 });
 
 document.documentElement.classList.add('js');
+initDemos();

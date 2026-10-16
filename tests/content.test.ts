@@ -43,12 +43,13 @@ describe('içerik', () => {
     for (const d of TEXT.tr.work.items) expect(d.pdf).not.toMatch(/-en\.pdf$/);
   });
 
-  it.each(LOCALES)('%s: hero görselindeki sayılar Demo 2 ile aynı', (l) => {
-    const v = TEXT[l].hero.visual;
-    expect(v.pipeline.steps.map((s) => s.value)).toEqual(['5', '3', '55', '1']);
-    expect(v.pipeline.steps.filter((s) => s.state === 'diff')).toHaveLength(1);
-    expect(v.app.alertRows[0]!.value).toBe('22.10.2026');
-    expect(v.app.alertRows[1]!.value).toMatch(/^12–20 (Ekim|Oct) 2026$/);
+  it.each(LOCALES)('%s: veri hattı vitrinindeki sayılar doğrulanmış özetlerle aynı', (l) => {
+    const facts = TEXT[l].showcases.systems.facts.map((f) => f.value);
+    // 990 Tablo 3 satırı (tercih özeti), 3 kaynak ve 55 karşılaştırma (ilan özeti).
+    expect(facts).toEqual(['990', '3', '55']);
+    expect(VERIFIED.listing.total).toBe(55);
+  });
+  it.each(LOCALES)('%s: kaynak karşılaştırma arayüzü doğrulanmış farkı gösterir', (l) => {
     const listing = TEXT[l].work.items.find((d) => d.id === 'listing')!;
     expect(listing.ui.kind).toBe('sources');
     if (listing.ui.kind === 'sources') {
@@ -56,7 +57,16 @@ describe('içerik', () => {
       expect(listing.ui.rows[0]!.value).toBe('2026-10-22T23:59:00');
     }
   });
-
+  it.each(LOCALES)('%s: hero demosu ve sürüm hattı tutarlı', (l) => {
+    const d = TEXT[l].hero.demo;
+    expect(d.nodes.map((n) => n.id)).toEqual(['api', 'queue', 'db', 'push']);
+    expect(d.app.tasks.length).toBeGreaterThan(0);
+    const p = TEXT[l].showcases.mobile.pipeline;
+    expect(p.stages.map((s) => s.id)).toContain(p.failAt);
+    for (const key of ['request', 'optimistic', 'reconnect'] as const) {
+      expect(d.log[key]).toMatch(/\{\w+\}/);
+    }
+  });
   it('vaka sonuç metinleri grafik sayılarını içerir', () => {
     for (const l of LOCALES) {
       for (const d of TEXT[l].work.items) {

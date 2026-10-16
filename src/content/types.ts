@@ -14,22 +14,84 @@ export interface Link {
   label: string;
 }
 
-/** Hero'daki temsilî ürün görselleştirmesi. Gösterilen veriler Demo 2'nin doğrulanmış bulgusudur. */
-export interface HeroVisual {
-  /** Ekran okuyucu için görselin tek cümlelik özeti. */
+/**
+ * Hero'daki etkileşimli konsept: bir mobil uygulamada tamamlanan görev API,
+ * iş kuyruğu ve veritabanından geçer. Müşteri projesi değildir; sayfada
+ * öyle olduğu yazılır. `{task}`, `{id}`, `{key}` ve `{n}` yer tutucularını
+ * tarayıcıdaki betik doldurur.
+ */
+export interface HeroDemo {
+  /** Ekran okuyucu için görselin özeti. */
   label: string;
-  /** Görünür not: görselin temsilî olduğu ve verinin kaynağı. */
+  /** Görünür not: konsept olduğu ve tarayıcıda çalıştığı. */
   caption: string;
-  pipeline: { title: string; steps: { label: string; value: string; state: 'ok' | 'diff' }[] };
-  console: { title: string; lines: { text: string; state?: 'ok' | 'diff' }[] };
   app: {
     title: string;
-    listingTitle: string;
-    listingMeta: string;
-    alertTitle: string;
-    alertRows: { source: string; value: string }[];
+    subtitle: string;
+    tasks: { id: string; title: string; meta: string }[];
     action: string;
+    synced: string;
+    queued: string;
+    online: string;
+    offline: string;
   };
+  nodes: { id: 'api' | 'queue' | 'db' | 'push'; label: string; detail: string }[];
+  controls: { networkOff: string; networkOn: string; reset: string; hint: string };
+  log: {
+    title: string;
+    idle: string;
+    optimistic: string;
+    request: string;
+    accepted: string;
+    stored: string;
+    notified: string;
+    offline: string;
+    reconnect: string;
+  };
+}
+
+export interface Capability {
+  id: string;
+  label: string;
+  detail: string;
+}
+
+interface ShowcaseBase {
+  /** Bölüm sırası, ör. "01". */
+  index: string;
+  kicker: string;
+  title: string;
+  body: string;
+  /** Kanıt durumu: gerçek proje mi, yetenek gösterimi mi. */
+  status: string;
+  stack: string;
+}
+
+/** Vitrin 1: mobil mühendislik ve uygulama güvenilirliği (tarayıcıda simülasyon). */
+export interface MobileShowcase extends ShowcaseBase {
+  points: string[];
+  pipeline: {
+    window: string;
+    stages: { id: string; label: string; detail: string }[];
+    /** Hata eklenince düşen aşamanın kimliği. */
+    failAt: string;
+    run: string;
+    regress: string;
+    idle: string;
+    running: string;
+    passed: string;
+    blocked: string;
+    failure: string;
+    rolloutLabel: string;
+    rollout: string[];
+    gate: string;
+  };
+}
+
+/** Vitrin 2: backend, entegrasyon ve otomasyon (gerçek veri hattı). */
+export interface SystemsShowcase extends ShowcaseBase {
+  flow: { label: string; detail: string }[];
+  facts: Fact[];
 }
 
 export interface SourceRow {
@@ -107,8 +169,9 @@ export interface SiteText {
     lede: (brand: string, city: string) => string;
     primaryCta: string;
     secondaryCta: Link;
-    capabilities: string[];
-    visual: HeroVisual;
+    eyebrow: string;
+    capabilities: Capability[];
+    demo: HeroDemo;
   };
   services: {
     title: string;
@@ -123,7 +186,12 @@ export interface SiteText {
     steps: { title: string; body: string }[];
     principles: { id: string; title: string; body: string }[];
   };
+  showcases: { mobile: MobileShowcase; systems: SystemsShowcase };
+  /** Vitrin 3: veri doğrulama örnekleri. */
   work: {
+    index: string;
+    kicker: string;
+    status: string;
     title: string;
     intro: string;
     downloadNote: string;
