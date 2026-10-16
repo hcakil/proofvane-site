@@ -34,8 +34,8 @@ describe('içerik', () => {
   it('kilit sayılar iki dilde aynıdır', () => {
     const nums = (l: (typeof LOCALES)[number]) =>
       TEXT[l].work.items.flatMap((d) => d.facts.map((f) => f.value.replace(/\D+/g, ' ').trim()));
-    expect(nums('en')).toEqual(['990', '39', '22', '12 20']);
-    expect(nums('tr')).toEqual(['990', '39', '22 10', '12 20']);
+    expect(nums('en')).toEqual(['22', '12 20', '990', '39']);
+    expect(nums('tr')).toEqual(['22 10', '12 20', '990', '39']);
   });
 
   it('İngilizce sayfa İngilizce özetlere, Türkçe sayfa Türkçe özetlere bağlanır', () => {
@@ -43,10 +43,25 @@ describe('içerik', () => {
     for (const d of TEXT.tr.work.items) expect(d.pdf).not.toMatch(/-en\.pdf$/);
   });
 
-  it('hero kenar notu sayısı iddia işaretleriyle eşleşir', () => {
+  it.each(LOCALES)('%s: hero görselindeki sayılar Demo 2 ile aynı', (l) => {
+    const v = TEXT[l].hero.visual;
+    expect(v.pipeline.steps.map((s) => s.value)).toEqual(['5', '3', '55', '1']);
+    expect(v.pipeline.steps.filter((s) => s.state === 'diff')).toHaveLength(1);
+    expect(v.app.alertRows[0]!.value).toBe('22.10.2026');
+    expect(v.app.alertRows[1]!.value).toMatch(/^12–20 (Ekim|Oct) 2026$/);
+    const listing = TEXT[l].work.items.find((d) => d.id === 'listing')!;
+    expect(listing.ui.kind).toBe('sources');
+    if (listing.ui.kind === 'sources') {
+      expect(listing.ui.rows.map((r) => r.state)).toEqual(['same', 'same', 'diff']);
+      expect(listing.ui.rows[0]!.value).toBe('2026-10-22T23:59:00');
+    }
+  });
+
+  it('vaka sonuç metinleri grafik sayılarını içerir', () => {
     for (const l of LOCALES) {
-      const marks = TEXT[l].hero.title.filter((p) => p.note).map((p) => p.note);
-      expect(marks).toEqual(TEXT[l].hero.notes.map((_, i) => i + 1));
+      for (const d of TEXT[l].work.items) {
+        for (const s of d.segments) expect(d.outcome, `${l}/${d.id}`).toContain(String(s.value));
+      }
     }
   });
 });

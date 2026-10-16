@@ -49,7 +49,7 @@ for (const locale of ['tr', 'en'] as const) {
       ).toBeVisible();
     });
 
-    test('klavye: atlama bağlantısı ilk odak, içerik odağı alır, dipnot notu hedefler', async ({
+    test('klavye: atlama bağlantısı ilk odak, içerik odağı alır, ikincil CTA çalışmalara gider', async ({
       page,
     }) => {
       await page.goto(`/${locale}/`);
@@ -59,9 +59,20 @@ for (const locale of ['tr', 'en'] as const) {
       await expect(skip).toBeInViewport();
       await page.keyboard.press('Enter');
       await expect(page).toHaveURL(/#content$/);
-      await page.locator('#ref-2').focus();
+      // İkinci kontrol temiz bir yüklemede: önceki yumuşak kaydırma devam ederken başlamasın.
+      await page.goto(`/${locale}/`);
+      await page.locator('.hero .button-ghost').focus();
       await page.keyboard.press('Enter');
-      await expect(page).toHaveURL(/#note-2$/);
+      await expect(page).toHaveURL(/#work$/);
+      // Yumuşak kaydırma bitene kadar bekle: bölümün üstü görünür alana gelmeli.
+      await expect
+        .poll(
+          () => page.evaluate(() => document.querySelector('#work')!.getBoundingClientRect().top),
+          {
+            timeout: 8000,
+          },
+        )
+        .toBeLessThan(200);
     });
 
     for (const scheme of ['light', 'dark'] as const) {

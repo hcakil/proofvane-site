@@ -2,8 +2,8 @@
 // bu betik yalnızca yazı tiplerini/stilleri yükler ve dil seçimini hatırlar.
 // Bu sayfalarda otomatik dil yönlendirmesi YOKTUR: /en/ ya da /tr/ adresine
 // doğrudan gelen ziyaretçi o sayfada kalır.
-import '@fontsource-variable/newsreader/opsz.css';
-import '@fontsource-variable/schibsted-grotesk';
+import '@fontsource-variable/geist';
+import '@fontsource-variable/geist-mono';
 import './styles.css';
 import { isLocale, writeStored } from './locale';
 

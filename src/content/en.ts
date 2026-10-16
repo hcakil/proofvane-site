@@ -16,8 +16,6 @@ export const en: SiteText = {
     footerNav: 'Footer menu',
     langNav: 'Language',
     langNames: { tr: 'Türkçe', en: 'English' },
-    notesLabel: 'Margin notes',
-    noteRef: (n) => `Note ${n}`,
   },
   nav: [
     { href: '#services', label: 'Services' },
@@ -26,20 +24,53 @@ export const en: SiteText = {
     { href: '#contact', label: 'Contact' },
   ],
   hero: {
-    title: [
-      { text: 'Working software,', note: 1 },
-      { text: ' traceable data,', note: 2 },
-      { text: ' written handover.', note: 3 },
-    ],
-    notes: [
-      'Flutter for iOS, Android and the web, including the API and backend behind it. Maintenance continues after launch.',
-      'Every data row links to the source it relies on. Anything the source cannot show is marked “could not be verified”.',
-      'Source code lives in your repository, with tests and CI. What was delivered is written down every time.',
-    ],
+    title: 'Software that ships. Data that checks out.',
     lede: (brand, city) =>
-      `${brand} is a software engineering studio in ${city}, Türkiye. We build mobile and web products, take responsibility for production, and verify your data against its sources.`,
+      `${brand} is a software engineering studio in ${city}, Türkiye. We build Flutter apps for mobile and web, the APIs and data pipelines behind them, and verify every value against the source it comes from.`,
     primaryCta: 'Tell us about your project',
-    secondaryCta: { href: '#work', label: 'See sample work' },
+    secondaryCta: { href: '#work', label: 'See the work' },
+    capabilities: [
+      'Flutter: iOS, Android, web',
+      'API and backend',
+      'Data automation',
+      'Source-referenced verification',
+    ],
+    visual: {
+      label:
+        'Representative product visualisation: a data pipeline, an API console and a Flutter app showing the same date discrepancy in a job listing.',
+      caption:
+        'Representative interface. The listing and the date discrepancy are real: Sample 2, sources compared on 13–14.10.2026.',
+      pipeline: {
+        title: 'listing-accuracy / pipeline',
+        steps: [
+          { label: 'Listings selected', value: '5', state: 'ok' },
+          { label: 'Official sources', value: '3', state: 'ok' },
+          { label: 'Field comparisons', value: '55', state: 'ok' },
+          { label: 'Cross-source difference', value: '1', state: 'diff' },
+        ],
+      },
+      console: {
+        title: 'api / verify',
+        lines: [
+          { text: 'fetch  kariyerkapisi  listing/milli-saraylar' },
+          { text: 'fetch  millisaraylar.gov.tr  DuyuruDetay/2243' },
+          { text: 'match  application_end  S1 = S2', state: 'ok' },
+          { text: 'match  application_end  S2 ≠ S3', state: 'diff' },
+          { text: 'recheck  14.10.2026 21:14  unchanged' },
+        ],
+      },
+      app: {
+        title: 'Listings',
+        listingTitle: 'Security and Protection Officer',
+        listingMeta: 'National Palaces Administration, Istanbul, 80 posts',
+        alertTitle: 'Application deadline differs between sources',
+        alertRows: [
+          { source: 'Kariyer Kapısı', value: '22.10.2026' },
+          { source: 'Institution notice', value: '12–20 Oct 2026' },
+        ],
+        action: 'Confirm with the institution',
+      },
+    },
   },
   services: {
     title: 'Services',
@@ -150,36 +181,27 @@ export const en: SiteText = {
     ],
   },
   work: {
-    title: 'Sample work',
+    title: 'Selected work',
     intro:
-      'Two examples of data-quality work, prepared on Turkish public-sector data. The figures in the charts are the verified results from the downloadable one-page summaries. The full report is shared in a call.',
+      'Two data-verification projects built on official Turkish public-sector data. The interfaces are representative; every value inside them comes from the verified one-page summary.',
     downloadNote: 'PDF, 1 page',
     pendingNote: 'Summary coming soon.',
+    representative: 'Representative interface, verified data',
+    problemLabel: 'Problem',
+    approachLabel: 'Approach',
+    outcomeLabel: 'Outcome',
     items: [
-      {
-        id: 'placement',
-        title: 'Placement eligibility pre-check: ÖSYM KPSS-2025/2',
-        body: 'For a fictional candidate profile, every post row in 13 provinces was matched one by one against the qualification codes in the official guide. Each row cites the official document and page number.',
-        chartTitle: '513 posts in 13 provinces, by eligibility',
-        chartUnit: 'posts',
-        segments: [
-          { key: 'yes', label: 'Eligible', value: 78 },
-          { key: 'check', label: 'Needs checking', value: 74 },
-          { key: 'no', label: 'Not eligible', value: 361 },
-        ],
-        facts: [
-          { value: '990', label: 'Table 3 rows parsed, 0 missing' },
-          { value: '39', label: 'visual checks, 0 mismatches' },
-        ],
-        pdf: 'proofvane-sample-placement-precheck-en.pdf',
-        pdfLabel: 'Download summary',
-        source:
-          'Source: ÖSYM Placement Guide and Table 3 (18.12.2025). Fictional profile; not a forecast.',
-      },
       {
         id: 'listing',
         title: 'Job-listing data accuracy audit: Kariyer Kapısı',
-        body: 'Eleven fields of one position from each of five open listings were compared across three official sources. A difference was reported only when it could be shown with a verbatim quote from the source.',
+        body: 'Eleven fields of one position from each of five open listings were compared across three official sources.',
+        tags: ['Data verification', 'HTML and PDF parsing', 'OCR', 'Python'],
+        problem:
+          'The same listing appears in the structured fields of Kariyer Kapısı (Türkiye’s official job portal), in the listing text and in the institution’s own notice. These sources do not always agree.',
+        approach:
+          'Every field was recorded with a verbatim quote from each of the three sources, and a script re-checked each quote against the source text on every build. A difference was reported only when it could be shown in the source.',
+        outcome:
+          'Of 55 comparisons, 46 were consistent, 6 were not in the source, 2 needed interpretation and 1 was a real difference: the application deadline of the National Palaces listing.',
         chartTitle: '55 comparisons (5 positions, 11 fields), by result',
         chartUnit: 'comparisons',
         segments: [
@@ -192,10 +214,82 @@ export const en: SiteText = {
           { value: '22 Oct', label: 'application deadline on Kariyer Kapısı' },
           { value: '12–20 Oct', label: 'application window in the institution’s own notice' },
         ],
+        ui: {
+          kind: 'sources',
+          window: 'listing-accuracy / milli-saraylar',
+          heading: 'Application end date, three sources',
+          rows: [
+            {
+              id: 'S1',
+              label: 'Kariyer Kapısı structured field',
+              value: '2026-10-22T23:59:00',
+              state: 'same',
+            },
+            {
+              id: 'S2',
+              label: 'Kariyer Kapısı listing text',
+              value: '“…close on 22.10.2026.”',
+              state: 'same',
+            },
+            {
+              id: 'S3',
+              label: 'Institution notice',
+              value: '“…between 12 and 20 October 2026…”',
+              state: 'diff',
+            },
+          ],
+          verdict:
+            'Different. Re-checked on 14.10.2026 at 21:14; none of the three sources had changed.',
+        },
         pdf: 'proofvane-sample-listing-accuracy-en.pdf',
-        pdfLabel: 'Download summary',
+        pdfLabel: 'Download the one-page summary',
         source:
           'Sources read on 13.10.2026; the difference was re-checked on 14.10.2026. Contains no personal data.',
+      },
+      {
+        id: 'placement',
+        title: 'Placement eligibility pre-check: ÖSYM KPSS-2025/2',
+        body: 'For a fictional candidate profile, every post row in 13 provinces was matched against the qualification codes.',
+        tags: ['Rules engine', 'PDF table parsing', 'Human verification'],
+        problem:
+          'Which of hundreds of public-sector post rows a candidate may apply for depends on interlocking qualification codes and a combination rule buried in the official placement guide.',
+        approach:
+          'All 990 rows of Table 3 were parsed; codes were matched with the guide’s OR/AND rule, quoting page numbers. Thirteen rows were checked by hand against page images.',
+        outcome:
+          'Of 513 posts, 78 were eligible, 74 needed an extra check and 361 were not eligible. 39 visual checks, 0 mismatches; 0 missing rows.',
+        chartTitle: '513 posts in 13 provinces, by eligibility',
+        chartUnit: 'posts',
+        segments: [
+          { key: 'yes', label: 'Eligible', value: 78 },
+          { key: 'check', label: 'Needs checking', value: 74 },
+          { key: 'no', label: 'Not eligible', value: 361 },
+        ],
+        facts: [
+          { value: '990', label: 'Table 3 rows parsed, 0 missing' },
+          { value: '39', label: 'visual checks, 0 mismatches' },
+        ],
+        ui: {
+          kind: 'eligibility',
+          window: 'placement-precheck / 13 provinces',
+          heading: 'Sample row: ÖSYM code 302010486',
+          detail: [
+            {
+              label: 'Institution',
+              value: 'Ministry of Environment, Urbanisation and Climate Change',
+            },
+            { label: 'Post', value: 'Contract staff / Office staff, Ankara, 17 posts' },
+            {
+              label: 'Qualification',
+              value: 'Business Administration is covered by code 4431; no extra condition',
+            },
+            { label: '2025/2 lowest score', value: '80.71056 (historical; not a forecast)' },
+          ],
+          verdict: 'Eligible',
+        },
+        pdf: 'proofvane-sample-placement-precheck-en.pdf',
+        pdfLabel: 'Download the one-page summary',
+        source:
+          'Source: ÖSYM Placement Guide and Table 3 (18.12.2025). Fictional profile; not a forecast.',
       },
     ],
   },

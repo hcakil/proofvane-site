@@ -14,11 +14,41 @@ export interface Link {
   label: string;
 }
 
-export interface HeroPart {
-  text: string;
-  /** Varsa bu ifadenin sonuna, aynı numaralı kenar notuna giden işaret eklenir. */
-  note?: number;
+/** Hero'daki temsilî ürün görselleştirmesi. Gösterilen veriler Demo 2'nin doğrulanmış bulgusudur. */
+export interface HeroVisual {
+  /** Ekran okuyucu için görselin tek cümlelik özeti. */
+  label: string;
+  /** Görünür not: görselin temsilî olduğu ve verinin kaynağı. */
+  caption: string;
+  pipeline: { title: string; steps: { label: string; value: string; state: 'ok' | 'diff' }[] };
+  console: { title: string; lines: { text: string; state?: 'ok' | 'diff' }[] };
+  app: {
+    title: string;
+    listingTitle: string;
+    listingMeta: string;
+    alertTitle: string;
+    alertRows: { source: string; value: string }[];
+    action: string;
+  };
 }
+
+export interface SourceRow {
+  id: string;
+  label: string;
+  value: string;
+  state: 'same' | 'diff';
+}
+
+/** Vaka sunumundaki temsilî arayüz; içindeki her değer doğrulanmış özetten gelir. */
+export type CaseUi =
+  | { kind: 'sources'; window: string; heading: string; rows: SourceRow[]; verdict: string }
+  | {
+      kind: 'eligibility';
+      window: string;
+      heading: string;
+      detail: { label: string; value: string }[];
+      verdict: string;
+    };
 
 export interface Service {
   id: string;
@@ -52,6 +82,11 @@ export interface Demo {
   pdf: string;
   pdfLabel: string;
   source: string;
+  tags: string[];
+  problem: string;
+  approach: string;
+  outcome: string;
+  ui: CaseUi;
 }
 
 export interface SiteText {
@@ -65,16 +100,15 @@ export interface SiteText {
     footerNav: string;
     langNav: string;
     langNames: Record<Locale, string>;
-    notesLabel: string;
-    noteRef: (n: number) => string;
   };
   nav: Link[];
   hero: {
-    title: HeroPart[];
-    notes: string[];
+    title: string;
     lede: (brand: string, city: string) => string;
     primaryCta: string;
     secondaryCta: Link;
+    capabilities: string[];
+    visual: HeroVisual;
   };
   services: {
     title: string;
@@ -94,6 +128,10 @@ export interface SiteText {
     intro: string;
     downloadNote: string;
     pendingNote: string;
+    representative: string;
+    problemLabel: string;
+    approachLabel: string;
+    outcomeLabel: string;
     items: Demo[];
   };
   contact: {

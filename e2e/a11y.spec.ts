@@ -37,11 +37,10 @@ test('kök sayfa (yönlendirme betiği çalışmazsa görünen seçim ekranı) e
 test('hareket azaltma: animasyon kapalı; tercih yoksa tek açılış animasyonu', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/en/');
-  const reduced = await page
-    .locator('.claim')
-    .first()
-    .evaluate((el) => getComputedStyle(el).animationName);
-  expect(reduced).toBe('none');
+  for (const sel of ['.win-flow', '.phone', '.wire path', '.pulse']) {
+    const name = await page.locator(sel).evaluate((el) => getComputedStyle(el).animationName);
+    expect(name, sel).toBe('none');
+  }
   const scroll = await page.evaluate(
     () => getComputedStyle(document.documentElement).scrollBehavior,
   );
@@ -50,8 +49,7 @@ test('hareket azaltma: animasyon kapalı; tercih yoksa tek açılış animasyonu
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.reload();
   const normal = await page
-    .locator('.claim')
-    .first()
+    .locator('.win-flow')
     .evaluate((el) => getComputedStyle(el).animationName);
-  expect(normal).toBe('rise');
+  expect(normal).toBe('lift');
 });

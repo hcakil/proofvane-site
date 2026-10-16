@@ -130,30 +130,77 @@ function mailto(email: string): string {
   return `mailto:${escapeHtml(email)}`;
 }
 
-function renderHero(config: SiteConfig, t: SiteText): string {
-  const title = t.hero.title
-    .map((p) => {
-      const text = escapeHtml(p.text);
-      if (!p.note) return text;
-      return `<span class="claim">${text}<sup class="cite"><a href="#note-${p.note}" id="ref-${p.note}" aria-label="${escapeHtml(t.a11y.noteRef(p.note))}">${p.note}</a></sup></span>`;
-    })
-    .join('');
-  const notes = t.hero.notes
+function renderHeroVisual(t: SiteText): string {
+  const v = t.hero.visual;
+  const steps = v.pipeline.steps
     .map(
-      (n, i) =>
-        `<li id="note-${i + 1}" class="note"><a class="note-num" href="#ref-${i + 1}" aria-label="${escapeHtml(t.a11y.noteRef(i + 1))}">${i + 1}</a><p>${escapeHtml(n)}</p></li>`,
+      (s) =>
+        `<li class="flow-step flow-${s.state}"><span class="flow-dot"></span><span class="flow-label">${escapeHtml(s.label)}</span><span class="flow-value">${escapeHtml(s.value)}</span></li>`,
     )
     .join('');
+  const lines = v.console.lines
+    .map(
+      (l, i) =>
+        `<li class="log-line${l.state ? ` log-${l.state}` : ''}"><span class="log-n">${String(i + 1).padStart(2, '0')}</span><code>${escapeHtml(l.text)}</code></li>`,
+    )
+    .join('');
+  const alertRows = v.app.alertRows
+    .map(
+      (r) =>
+        `<div class="alert-row"><dt>${escapeHtml(r.source)}</dt><dd>${escapeHtml(r.value)}</dd></div>`,
+    )
+    .join('');
+  return `<figure class="stage" aria-labelledby="stage-caption">
+        <p class="visually-hidden">${escapeHtml(v.label)}</p>
+        <div class="stage-scene" aria-hidden="true">
+          <div class="glow glow-a"></div>
+          <div class="glow glow-b"></div>
+          <div class="win win-flow">
+            <div class="win-bar"><span></span><span></span><span></span><p>${escapeHtml(v.pipeline.title)}</p></div>
+            <ol class="flow">${steps}</ol>
+          </div>
+          <div class="win win-log">
+            <div class="win-bar"><span></span><span></span><span></span><p>${escapeHtml(v.console.title)}</p></div>
+            <ol class="log">${lines}</ol>
+          </div>
+          <svg class="wire" viewBox="0 0 400 200" preserveAspectRatio="none" focusable="false"><path d="M396 10 C 250 10, 150 190, 4 190"/></svg>
+          <div class="phone">
+            <div class="phone-screen">
+              <div class="app-bar"><span class="app-title">${escapeHtml(v.app.title)}</span><span class="app-avatar"></span></div>
+              <div class="app-card app-card-focus">
+                <p class="app-card-title">${escapeHtml(v.app.listingTitle)}</p>
+                <p class="app-card-meta">${escapeHtml(v.app.listingMeta)}</p>
+                <div class="app-alert">
+                  <p class="app-alert-title"><span class="pulse"></span>${escapeHtml(v.app.alertTitle)}</p>
+                  <dl>${alertRows}</dl>
+                  <p class="app-alert-action">${escapeHtml(v.app.action)}</p>
+                </div>
+              </div>
+              <div class="app-card app-card-ghost"><span></span><span></span></div>
+              <div class="app-card app-card-ghost"><span></span><span></span></div>
+              <div class="app-tabs"><span></span><span></span><span></span><span></span></div>
+            </div>
+          </div>
+        </div>
+        <figcaption id="stage-caption" class="stage-caption">${escapeHtml(v.caption)}</figcaption>
+      </figure>`;
+}
+
+function renderHero(config: SiteConfig, t: SiteText): string {
   const primary = isValidEmail(config.contactEmail)
     ? `<a class="button button-primary" href="${mailto(config.contactEmail)}">${escapeHtml(t.hero.primaryCta)}</a>`
     : `<a class="button button-primary" href="#contact">${escapeHtml(t.hero.primaryCta)}</a>`;
+  const caps = t.hero.capabilities.map((c) => `<li>${escapeHtml(c)}</li>`).join('');
   return `<section class="hero" aria-labelledby="hero-title">
-      <div class="hero-copy">
-        <h1 id="hero-title" class="hero-title">${title}</h1>
-        <p class="lede">${escapeHtml(t.hero.lede(config.brandName, config.city))}</p>
-        <p class="actions">${primary}<a class="button button-quiet" href="${t.hero.secondaryCta.href}">${escapeHtml(t.hero.secondaryCta.label)}</a></p>
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <h1 id="hero-title" class="hero-title">${escapeHtml(t.hero.title)}</h1>
+          <p class="lede">${escapeHtml(t.hero.lede(config.brandName, config.city))}</p>
+          <p class="actions">${primary}<a class="button button-ghost" href="${t.hero.secondaryCta.href}">${escapeHtml(t.hero.secondaryCta.label)}</a></p>
+          <ul class="caps">${caps}</ul>
+        </div>
+        ${renderHeroVisual(t)}
       </div>
-      <aside class="hero-notes" aria-label="${escapeHtml(t.a11y.notesLabel)}"><ol>${notes}</ol></aside>
     </section>`;
 }
 
@@ -260,32 +307,67 @@ export function renderDemoActions(
 ): string {
   if (!published || !demo.pdf)
     return `<p class="demo-pending">${escapeHtml(t.work.pendingNote)}</p>`;
-  return `<a class="button button-quiet demo-download" href="${prefix}ornekler/${escapeHtml(demo.pdf)}" type="application/pdf" download data-testid="demo-download">${escapeHtml(demo.pdfLabel)}<span class="visually-hidden">: ${escapeHtml(demo.title)}</span> <span class="download-note">(${escapeHtml(t.work.downloadNote)})</span></a>`;
+  return `<a class="case-link demo-download" href="${prefix}ornekler/${escapeHtml(demo.pdf)}" type="application/pdf" download data-testid="demo-download">${escapeHtml(demo.pdfLabel)}<span class="visually-hidden">: ${escapeHtml(demo.title)}</span> <span class="download-note">(${escapeHtml(t.work.downloadNote)})</span></a>`;
+}
+
+function renderCaseUi(demo: Demo): string {
+  const ui = demo.ui;
+  let body: string;
+  if (ui.kind === 'sources') {
+    const rows = ui.rows
+      .map(
+        (r) =>
+          `<li class="src src-${r.state}"><span class="src-id">${escapeHtml(r.id)}</span><span class="src-label">${escapeHtml(r.label)}</span><span class="src-value">${escapeHtml(r.value)}</span></li>`,
+      )
+      .join('');
+    body = `<ol class="src-list">${rows}</ol>`;
+  } else {
+    const rows = ui.detail
+      .map((d) => `<div><dt>${escapeHtml(d.label)}</dt><dd>${escapeHtml(d.value)}</dd></div>`)
+      .join('');
+    body = `<dl class="detail">${rows}</dl>`;
+  }
+  return `<div class="ui">
+          <div class="win-bar"><span></span><span></span><span></span><p>${escapeHtml(ui.window)}</p></div>
+          <div class="ui-body">
+            <p class="ui-heading">${escapeHtml(ui.heading)}</p>
+            ${body}
+            <p class="ui-verdict ui-verdict-${ui.kind}">${escapeHtml(ui.verdict)}</p>
+            ${renderChart(demo)}
+          </div>
+        </div>`;
 }
 
 function renderDemo(demo: Demo, t: SiteText, published: boolean, prefix: string): string {
-  const facts = demo.facts
-    .map((f) => `<div><dt>${escapeHtml(f.value)}</dt><dd>${escapeHtml(f.label)}</dd></div>`)
-    .join('');
-  return `<article class="demo" aria-labelledby="demo-${demo.id}">
-        <div class="demo-text">
-          <h3 id="demo-${demo.id}">${escapeHtml(demo.title)}</h3>
-          <p>${escapeHtml(demo.body)}</p>
-          <dl class="facts">${facts}</dl>
+  const tags = demo.tags.map((x) => `<li>${escapeHtml(x)}</li>`).join('');
+  return `<article class="case" aria-labelledby="case-${demo.id}">
+        <div class="case-copy">
+          <ul class="tags">${tags}</ul>
+          <h3 id="case-${demo.id}">${escapeHtml(demo.title)}</h3>
+          <dl class="case-story">
+            <div><dt>${escapeHtml(t.work.problemLabel)}</dt><dd>${escapeHtml(demo.problem)}</dd></div>
+            <div><dt>${escapeHtml(t.work.approachLabel)}</dt><dd>${escapeHtml(demo.approach)}</dd></div>
+            <div><dt>${escapeHtml(t.work.outcomeLabel)}</dt><dd>${escapeHtml(demo.outcome)}</dd></div>
+          </dl>
           <p class="demo-source">${escapeHtml(demo.source)}</p>
           ${renderDemoActions(demo, t, published, prefix)}
         </div>
-        ${renderChart(demo)}
+        <figure class="case-visual">
+          ${renderCaseUi(demo)}
+          <figcaption>${escapeHtml(t.work.representative)}</figcaption>
+        </figure>
       </article>`;
 }
 
 function renderWork(config: SiteConfig, t: SiteText, prefix: string): string {
-  return `<section id="work" class="section" aria-labelledby="work-title">
-      <div class="section-head">
-        <h2 id="work-title">${escapeHtml(t.work.title)}</h2>
-        <p>${escapeHtml(t.work.intro)}</p>
+  return `<section id="work" class="work" aria-labelledby="work-title">
+      <div class="wrap">
+        <div class="work-head">
+          <h2 id="work-title">${escapeHtml(t.work.title)}</h2>
+          <p>${escapeHtml(t.work.intro)}</p>
+        </div>
+        <div class="cases">${t.work.items.map((d) => renderDemo(d, t, config.demosPublished, prefix)).join('')}</div>
       </div>
-      <div class="demos">${t.work.items.map((d) => renderDemo(d, t, config.demosPublished, prefix)).join('')}</div>
     </section>`;
 }
 
@@ -332,7 +414,7 @@ export function renderBody(
     ? `<p><a href="${mailto(config.contactEmail)}">${escapeHtml(config.contactEmail)}</a></p>`
     : '';
   return `<a class="skip-link" href="#content">${escapeHtml(t.a11y.skip)}</a>
-  <header class="masthead">
+  <header class="masthead dark-zone">
     <div class="wrap masthead-inner">
       <a class="brand" href="#hero-title">${MARK}<span>${brand}</span></a>
       <nav class="primary-nav" aria-label="${escapeHtml(t.a11y.mainNav)}"><ul>${navLinks}</ul></nav>
@@ -340,11 +422,13 @@ export function renderBody(
     </div>
   </header>
   <main id="content" tabindex="-1">
-    <div class="wrap">
+    <div class="dark-zone">
       ${renderHero(config, t)}
+      ${renderWork(config, t, prefix)}
+    </div>
+    <div class="wrap">
       ${renderServices(t)}
       ${renderMethod(t)}
-      ${renderWork(config, t, prefix)}
     </div>
     ${renderContactSection(config, t)}
   </main>

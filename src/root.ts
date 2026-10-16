@@ -1,7 +1,7 @@
 // Kök sayfa (/): kayıtlı tercih, yoksa tarayıcının dil listesindeki ilk dil.
 // Türkçe ise /tr/, diğer tüm dillerde /en/. Betik çalışmazsa sayfadaki iki
 // bağlantı elle seçim sunar.
-import '@fontsource-variable/schibsted-grotesk';
+import '@fontsource-variable/geist';
 import './styles.css';
 import { isLocale, pickLocale, readStored, writeStored } from './locale';
 

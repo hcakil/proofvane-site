@@ -165,7 +165,10 @@ describe.each(LOCALES)('%s sayfası', (l) => {
   it('erişilebilirlik etiketleri dile göredir', () => {
     expect(body).toContain(`>${t.a11y.skip}</a>`);
     expect(body).toContain(`aria-label="${t.a11y.mainNav}"`);
-    expect(body).toContain(`aria-label="${t.a11y.notesLabel}"`);
+    expect(body).toContain(
+      `<figcaption id="stage-caption" class="stage-caption">${escapeHtml(t.hero.visual.caption)}</figcaption>`,
+    );
+    expect(body).toContain(`<p class="visually-hidden">${escapeHtml(t.hero.visual.label)}</p>`);
   });
 
   it('alt bilgide ticari unvan ve yıl', () => {
@@ -178,13 +181,26 @@ describe.each(LOCALES)('%s sayfası', (l) => {
     expect(titles).toEqual(['flutter', 'web', 'api', 'automation', 'verification']);
   });
 
-  it('sınav/kamu ilanı ifadeleri yalnızca örnek çalışmalar bölümünde geçer', () => {
-    const exam = /kpss|ösym|atanma|kamu ilan|tercih|placement|public-sector|kariyer kapısı/i;
-    const start = body.indexOf('<section id="work"');
-    const end = body.indexOf('</section>', start);
-    const withoutWork = body.slice(0, start) + body.slice(end);
-    expect(withoutWork).not.toMatch(exam);
+  it('sınav/kamu ilanı ifadeleri yalnızca vaka bölümünde ve temsilî hero görselinde geçer', () => {
+    const exam =
+      /kpss|ösym|atanma|kamu ilan|tercih|placement|public-sector|kariyer kapısı|millî saraylar|national palaces/i;
+    const cut = (html: string, start: string, endTag: string) => {
+      const i = html.indexOf(start);
+      expect(i).toBeGreaterThan(-1);
+      const j = html.indexOf(endTag, i) + endTag.length;
+      return html.slice(0, i) + html.slice(j);
+    };
+    let rest = cut(body, '<section id="work"', '</section>');
+    rest = cut(rest, '<figure class="stage"', '</figure>');
+    expect(rest).not.toMatch(exam);
     expect(head.replace(/<script[\s\S]*?<\/script>/, '')).not.toMatch(exam);
+  });
+
+  it('hero görseli ve vaka arayüzleri temsilî olduklarını açıkça söyler', () => {
+    expect(body).toMatch(l === 'tr' ? /Temsilî arayüz/ : /Representative interface/);
+    const cases = body.match(/<figure class="case-visual">/g) ?? [];
+    expect(cases).toHaveLength(t.work.items.length);
+    expect(body.split(escapeHtml(t.work.representative)).length - 1).toBe(t.work.items.length);
   });
 });
 
