@@ -1,0 +1,11 @@
+# Cloudflare Pages yanıt başlıkları (vite preview bu dosyayı kullanmaz).
+/*
+  Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  X-Frame-Options: DENY
+
+/ornekler/*
+  X-Robots-Tag: noindex
+  Cache-Control: public, max-age=3600

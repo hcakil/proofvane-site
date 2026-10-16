@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /ornekler/
+
+Sitemap: https://proofvane.com/sitemap.xml

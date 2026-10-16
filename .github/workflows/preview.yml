@@ -1,0 +1,85 @@
+name: Deploy preview (Cloudflare Pages, isteğe bağlı)
+
+# Production olmayan bir Pages dalına ön izleme yüklemesi. Yalnızca elle
+# tetiklenir; `preview` ortamında çalışır. Secret/değişken eksikse durur.
+# Not: Pages ön izleme adresleri (<dal>.<proje>.pages.dev) varsayılan olarak
+# herkese açıktır; gizlemek için Pages projesinde Access politikası açılabilir.
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Pages ön izleme dalı (main olamaz)'
+        required: true
+        default: 'onizleme'
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-preview-${{ inputs.branch }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    name: Cloudflare Pages (preview)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: preview
+      url: ${{ steps.deploy.outputs.pages-deployment-alias-url || steps.deploy.outputs.deployment-url }}
+    steps:
+      - name: Ön koşulları denetle
+        env:
+          BRANCH: ${{ inputs.branch }}
+          HAS_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+          HAS_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+          CF_PAGES_PROJECT: ${{ vars.CF_PAGES_PROJECT }}
+        run: |
+          fail=0
+          if ! printf '%s' "$BRANCH" | grep -Eq '^[a-z0-9][a-z0-9-]{0,27}$' || [ "$BRANCH" = "main" ]; then
+            echo "::error::Dal adı geçersiz ya da 'main' (küçük harf, rakam, tire; en fazla 28 karakter)."; fail=1
+          fi
+          if [ "$HAS_API_TOKEN" != "true" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN secret'ı tanımlı değil."; fail=1
+          fi
+          if [ "$HAS_ACCOUNT_ID" != "true" ]; then
+            echo "::error::CLOUDFLARE_ACCOUNT_ID secret'ı tanımlı değil."; fail=1
+          fi
+          if [ -z "$CF_PAGES_PROJECT" ]; then
+            echo "::error::CF_PAGES_PROJECT değişkeni tanımlı değil."; fail=1
+          elif ! printf '%s' "$CF_PAGES_PROJECT" | grep -Eq '^[a-z0-9][a-z0-9-]{0,57}$'; then
+            echo "::error::CF_PAGES_PROJECT geçersiz: yalnızca küçük harf, rakam ve tire."; fail=1
+          fi
+          if [ "$fail" -ne 0 ]; then
+            echo "Ön izleme yüklenmedi. README'deki 'Yayın' bölümüne bakın."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+
+      - name: Cloudflare Pages'e ön izleme yükle
+        id: deploy
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=${{ vars.CF_PAGES_PROJECT }} --branch=${{ inputs.branch }} --commit-dirty=true
+
+      - name: Özet
+        env:
+          URL: ${{ steps.deploy.outputs.pages-deployment-alias-url || steps.deploy.outputs.deployment-url }}
+        run: |
+          echo "Ön izleme: $URL" >> "$GITHUB_STEP_SUMMARY"
