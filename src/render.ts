@@ -583,6 +583,7 @@ function renderSolutions(config: SiteConfig, t: SiteText, prefix: string): strin
           <h3 id="sol-${key}"><a href="${solutionPath(t.locale, key)}">${escapeHtml(page.title)}</a></h3>
           <p class="sol-body">${escapeHtml(page.problem.body)}</p>
           ${renderChart(demo)}
+          <p class="demo-source">${escapeHtml(page.demo.note)}</p>
           <p class="sol-actions"><a class="button button-primary" href="${solutionPath(t.locale, key)}">${escapeHtml(t.solutions.more)}<span class="visually-hidden">: ${escapeHtml(page.meta.title)}</span></a></p>
           ${renderDemoActions(demo, t, config.demosPublished, prefix, page.pdfCta)}
         </article>`;

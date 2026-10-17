@@ -50,7 +50,7 @@ export const PAGES: Record<SolutionPage['key'], SolutionPage> = {
     demo: {
       title: 'Gerçek örnek: KPSS-2025/2, 13 il',
       body: 'Kurgusal bir aday için 13 ildeki 513 kadro, ÖSYM Tablo 3’teki şartlarla karşılaştırıldı.',
-      note: 'Kurgusal profil; tahmin değildir. Sayılar doğrulanmış tek sayfalık özetten alınmıştır.',
+      note: 'Kaynak: ÖSYM KPSS-2025/2 Tercih Kılavuzu ve Tablo 3 (yayım 18.12.2025); karşılaştırma 14.10.2026’da tamamlandı. Kurgusal profil; tahmin değildir.',
     },
     checks: {
       title: 'Raporda neler var',

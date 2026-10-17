@@ -49,7 +49,7 @@ export const PAGES: Record<SolutionPage['key'], SolutionPage> = {
     demo: {
       title: 'Real sample: KPSS-2025/2, 13 provinces',
       body: 'For a fictional candidate, 513 posts in 13 provinces were compared with the conditions in ÖSYM Table 3.',
-      note: 'Fictional profile; not a forecast. Figures come from the verified one-page summary.',
+      note: 'Source: ÖSYM KPSS-2025/2 Placement Guide and Table 3 (published 18.12.2025); comparison completed on 14.10.2026. Fictional profile; not a forecast.',
     },
     checks: {
       title: 'What the report contains',

@@ -81,6 +81,9 @@ describe('içerik', () => {
     expect(t.pages.precheck.notice).toMatch(
       l === 'tr' ? /atanma ihtimali/ : /chance of being placed/,
     );
+    // Resmî kaynakların okunma/kontrol tarihi açıkça yazılır.
+    expect(t.pages.precheck.demo.note).toMatch(/18\.12\.2025.*14\.10\.2026/);
+    expect(t.pages.listing.demo.note).toMatch(/13\.10\.2026.*14\.10\.2026/);
     for (const page of Object.values(t.pages)) {
       expect(page.notice).toMatch(l === 'tr' ? /değerlendir/ : /considering/);
     }
