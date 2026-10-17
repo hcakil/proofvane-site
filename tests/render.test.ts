@@ -4,6 +4,8 @@ import {
   renderNotFoundBody,
   renderSolutionBody,
   renderSolutionHead,
+  renderWalkthroughBody,
+  renderWalkthroughHead,
   SOLUTION_KEYS,
   solutionPath,
   isValidEmail,
@@ -17,6 +19,7 @@ import {
 } from '../src/render';
 import { siteConfig, type SiteConfig } from '../src/site.config';
 import { LOCALES, TEXT } from '../src/content';
+import { WALKTHROUGH } from '../src/content/walkthrough';
 
 function withConfig(patch: Partial<SiteConfig>): SiteConfig {
   return { ...siteConfig, ...patch };
@@ -294,5 +297,31 @@ describe('kök sayfa', () => {
     const body = renderRootBody(siteConfig);
     expect(body).toContain('href="./tr/"');
     expect(body).toContain('href="./en/"');
+  });
+});
+
+describe.each(LOCALES)('%s: tercih ön kontrolü nasıl çalışır', (l) => {
+  const head = renderWalkthroughHead(siteConfig, l);
+  const body = renderWalkthroughBody(siteConfig, l, 2026);
+  const w = WALKTHROUGH[l];
+  it('canonical alt sayfa ve karşı dil', () => {
+    const self = `https://proofvane.com/${l}/${solutionPath(l, 'precheck')}${w.slug}/`;
+    expect(head).toContain(`<link rel="canonical" href="${self}" />`);
+    const other = LOCALES.find((x) => x !== l)!;
+    expect(body).toContain(
+      `href="../../../../${other}/${solutionPath(other, 'precheck')}${WALKTHROUGH[other].slug}/" hreflang="${other}"`,
+    );
+  });
+  it('dört sahne, kurgusal uyarı, kaynaklar ve iş birliği CTA', () => {
+    expect(body.match(/data-scene="/g)).toHaveLength(4);
+    expect(body).toContain(escapeHtml(w.notice));
+    expect(body).toMatch(/href="https:\/\/dokuman\.osym\.gov\.tr\/[^"]+\.pdf"/);
+    expect(body).toContain('mailto:partnerships@proofvane.com?subject=');
+    expect(body).toContain('href="tel:+905421546037"');
+    expect(body).not.toMatch(/POST |\/v1\/|<code/);
+  });
+  it('sayılar doğrulanmış örnekle aynı', () => {
+    for (const n of [78, 74, 361]) expect(body).toContain(`data-count="${n}"`);
+    expect(body).toContain('513');
   });
 });

@@ -132,3 +132,63 @@ test('ilk ekranda teknik ayrıntı görünmez; isteğe bağlı demo kapalı', as
   await page.locator('details.tech > summary').click();
   await expect(page.locator('[data-demo="sync"]')).toBeVisible();
 });
+
+for (const [l, path] of [
+  ['tr', '/tr/cozumler/tercih-on-kontrol/nasil-calisir/'],
+  ['en', '/en/solutions/placement-precheck/how-it-works/'],
+] as const) {
+  test.describe(`nasıl çalışır ${l}`, () => {
+    test('kendiliğinden ilerler, durdurulur, adımlar arasında gezilir', async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: 'no-preference' });
+      const problems: string[] = [];
+      page.on('pageerror', (e) => problems.push(e.message));
+      await page.goto(path);
+      const active = page.locator('.wt-scene.is-active');
+      await expect(active).toHaveAttribute('data-scene', '0');
+      await expect(active).toHaveAttribute('data-scene', '1', { timeout: 8000 });
+      await page.locator('[data-wt-toggle]').click();
+      await expect(page.locator('[data-wt-toggle]')).toHaveAttribute('aria-pressed', 'false');
+      await page.waitForTimeout(6000);
+      await expect(active).toHaveAttribute('data-scene', '1');
+      await page.locator('[data-wt-go="3"]').click();
+      await expect(active).toHaveAttribute('data-scene', '3');
+      await page.locator('[data-wt-prev]').click();
+      await expect(active).toHaveAttribute('data-scene', '2');
+      await expect(page.locator('.wt-scene.is-active [data-count="361"]')).toHaveText('361', {
+        timeout: 3000,
+      });
+      expect(problems).toEqual([]);
+    });
+
+    test('hareket azaltmada otomatik oynatma kapalı', async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await page.goto(path);
+      await expect(page.locator('[data-wt-toggle]')).toHaveAttribute('aria-pressed', 'false');
+      await page.waitForTimeout(6500);
+      await expect(page.locator('.wt-scene.is-active')).toHaveAttribute('data-scene', '0');
+    });
+
+    test('390px taşma yok ve AA ihlali yok', async ({ page }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await page.goto(path);
+      const o = await page.evaluate(() => ({
+        s: document.documentElement.scrollWidth,
+        c: document.documentElement.clientWidth,
+      }));
+      expect(o.s).toBeLessThanOrEqual(o.c);
+      const AxeBuilder = (await import('@axe-core/playwright')).default;
+      for (const i of [0, 1, 2, 3]) {
+        await page.locator(`[data-wt-go="${i}"]`).click();
+        const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
+        expect(r.violations.map((v) => `${i}:${v.id}`)).toEqual([]);
+      }
+    });
+  });
+}
+
+test('tercih sayfasından nasıl çalışır sayfasına bağlantı', async ({ page }) => {
+  await page.goto('/tr/cozumler/tercih-on-kontrol/');
+  await page.locator('[data-testid="walkthrough-link"]').click();
+  await expect(page).toHaveURL(/\/tr\/cozumler\/tercih-on-kontrol\/nasil-calisir\/$/);
+});

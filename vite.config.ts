@@ -10,8 +10,11 @@ import {
   renderRootHead,
   renderSolutionBody,
   renderSolutionHead,
+  renderWalkthroughBody,
+  renderWalkthroughHead,
   SOLUTION_KEYS,
   solutionPath,
+  walkthroughPath,
   type SolutionKey,
 } from './src/render';
 import { LOCALES, type Locale } from './src/content';
@@ -20,7 +23,14 @@ export type PageId =
   | { kind: 'root' }
   | { kind: 'notFound' }
   | { kind: 'home'; locale: Locale }
-  | { kind: 'solution'; locale: Locale; key: SolutionKey };
+  | { kind: 'solution'; locale: Locale; key: SolutionKey }
+  | { kind: 'walkthrough'; locale: Locale };
+
+/** "Nasıl çalışır" alt sayfalarının şablon yolları. */
+export const WALKTHROUGH_TEMPLATES: { path: string; locale: Locale }[] = LOCALES.map((locale) => ({
+  path: `${locale}/${solutionPath(locale, 'precheck')}${walkthroughPath(locale)}index.html`,
+  locale,
+}));
 
 /** Çözüm sayfalarının şablon yolları (kökten), ör. "tr/cozumler/tercih-on-kontrol/index.html". */
 export const SOLUTION_TEMPLATES: { path: string; locale: Locale; key: SolutionKey }[] =
@@ -36,6 +46,9 @@ export const SOLUTION_TEMPLATES: { path: string; locale: Locale; key: SolutionKe
 export function pageOf(path: string): PageId {
   const p = path.replace(/\\/g, '/');
   if (/\/404\.html$/.test(p)) return { kind: 'notFound' };
+  for (const w of WALKTHROUGH_TEMPLATES) {
+    if (p.endsWith(`/${w.path}`)) return { kind: 'walkthrough', locale: w.locale };
+  }
   for (const s of SOLUTION_TEMPLATES) {
     if (p.endsWith(`/${s.path}`)) return { kind: 'solution', locale: s.locale, key: s.key };
   }
@@ -54,6 +67,11 @@ function render(page: PageId): { head: string; body: string } {
       return {
         head: renderHead(siteConfig, page.locale),
         body: renderBody(siteConfig, page.locale),
+      };
+    case 'walkthrough':
+      return {
+        head: renderWalkthroughHead(siteConfig, page.locale),
+        body: renderWalkthroughBody(siteConfig, page.locale),
       };
     case 'solution':
       return {
@@ -106,6 +124,9 @@ export default defineConfig({
         en: resolve(__dirname, 'en/index.html'),
         ...Object.fromEntries(
           SOLUTION_TEMPLATES.map((s) => [`${s.locale}-${s.key}`, resolve(__dirname, s.path)]),
+        ),
+        ...Object.fromEntries(
+          WALKTHROUGH_TEMPLATES.map((w) => [`${w.locale}-walkthrough`, resolve(__dirname, w.path)]),
         ),
       },
     },

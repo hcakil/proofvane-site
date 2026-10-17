@@ -14,6 +14,7 @@
 import type { SiteConfig } from './site.config';
 import { LOCALES, TEXT, type Locale } from './content';
 import type { Demo, Segment, Service, SiteText, SolutionPage } from './content/types';
+import { WALKTHROUGH } from './content/walkthrough';
 
 export type SolutionKey = SolutionPage['key'];
 export const SOLUTION_KEYS: readonly SolutionKey[] = ['precheck', 'listing'];
@@ -51,24 +52,31 @@ export function pageUrl(
   config: SiteConfig,
   locale: Locale | 'root',
   key?: SolutionKey,
+  sub?: boolean,
 ): string | null {
   const b = base(config);
   if (!b) return null;
   if (locale === 'root') return `${b}/`;
-  return key ? `${b}/${locale}/${solutionPath(locale, key)}` : `${b}/${locale}/`;
+  if (!key) return `${b}/${locale}/`;
+  return `${b}/${locale}/${solutionPath(locale, key)}${sub ? walkthroughPath(locale) : ''}`;
+}
+
+/** Tercih ön kontrolü "nasıl çalışır" alt sayfasının çözüm sayfasına göre yolu. */
+export function walkthroughPath(locale: Locale): string {
+  return `${WALKTHROUGH[locale].slug}/`;
 }
 
 const MARK = `<svg class="mark" viewBox="0 0 32 32" width="28" height="28" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="7" class="mark-bg"/><path d="M11.5 24.5V8h6.2a5.4 5.4 0 0 1 0 10.8h-6.2" class="mark-p"/><circle cx="23.6" cy="23.2" r="2.6" class="mark-dot"/></svg>`;
 
 /* ------------------------------------------------------------------ head */
 
-function alternates(config: SiteConfig, key?: SolutionKey): string[] {
+function alternates(config: SiteConfig, key?: SolutionKey, sub?: boolean): string[] {
   const out: string[] = [];
   for (const l of LOCALES) {
-    const u = pageUrl(config, l, key);
+    const u = pageUrl(config, l, key, sub);
     if (u) out.push(`<link rel="alternate" hreflang="${l}" href="${escapeHtml(u)}" />`);
   }
-  const root = key ? pageUrl(config, 'en', key) : pageUrl(config, 'root');
+  const root = key ? pageUrl(config, 'en', key, sub) : pageUrl(config, 'root');
   if (root) out.push(`<link rel="alternate" hreflang="x-default" href="${escapeHtml(root)}" />`);
   return out;
 }
@@ -84,6 +92,7 @@ function headParts(
   title: string,
   description: string,
   key?: SolutionKey,
+  sub?: boolean,
 ): string[] {
   const t = TEXT[locale];
   const other = LOCALES.filter((l) => l !== locale).map((l) => TEXT[l].ogLocale);
@@ -100,11 +109,11 @@ function headParts(
     `<meta name="twitter:card" content="summary_large_image" />`,
   ];
   if (!config.indexable) parts.push('<meta name="robots" content="noindex, nofollow" />');
-  const self = pageUrl(config, locale, key);
+  const self = pageUrl(config, locale, key, sub);
   const b = base(config);
   if (self && b) {
     parts.push(`<link rel="canonical" href="${escapeHtml(self)}" />`);
-    parts.push(...alternates(config, key));
+    parts.push(...alternates(config, key, sub));
     parts.push(`<meta property="og:url" content="${escapeHtml(self)}" />`);
     parts.push(`<meta property="og:image" content="${escapeHtml(`${b}/og-image.png`)}" />`);
     parts.push(`<meta property="og:image:width" content="1200" />`);
@@ -789,6 +798,7 @@ export function renderSolutionBody(
           <h1 id="sol-title" class="sol-title">${escapeHtml(page.title)}</h1>
           <p class="lede">${escapeHtml(page.lede)}</p>
           <p class="actions">${cta}${renderDemoActions(demo, t, config.demosPublished, prefix, page.pdfCta)}</p>
+          ${key === 'precheck' ? `<p class="wt-link"><a href="${walkthroughPath(locale)}" data-testid="walkthrough-link">${escapeHtml(WALKTHROUGH[locale].meta.title)} →</a></p>` : ''}
           <p class="status status-concept">${escapeHtml(page.notice)}</p>
         </div>
         ${renderSolutionVisual(page, demo)}
@@ -867,4 +877,160 @@ export function renderNotFoundBody(config: SiteConfig): string {
     <h1 class="nf-code">404</h1>
     <div class="nf-blocks">${blocks}</div>
   </main>`;
+}
+
+/* --------------------------------------------- tercih ön kontrolü: nasıl çalışır */
+
+export function renderWalkthroughHead(config: SiteConfig, locale: Locale): string {
+  const w = WALKTHROUGH[locale];
+  return headParts(
+    config,
+    locale,
+    `${w.meta.title} | ${config.brandName}`,
+    w.meta.description,
+    'precheck',
+    true,
+  ).join('\n    ');
+}
+
+function wtScene(
+  index: number,
+  total: number,
+  id: string,
+  step: string,
+  title: string,
+  body: string,
+  visual: string,
+): string {
+  return `<article class="wt-scene wt-scene-${id}" data-scene="${index}" id="wt-${id}" aria-labelledby="wt-${id}-title">
+          <div class="wt-copy">
+            <p class="wt-step"><span>${index + 1}/${total}</span> ${escapeHtml(step)}</p>
+            <h2 id="wt-${id}-title">${escapeHtml(title)}</h2>
+            <p>${escapeHtml(body)}</p>
+          </div>
+          <div class="wt-visual">${visual}</div>
+        </article>`;
+}
+
+export function renderWalkthroughBody(
+  config: SiteConfig,
+  locale: Locale,
+  year = new Date().getFullYear(),
+): string {
+  const t = TEXT[locale];
+  const w = WALKTHROUGH[locale];
+  const demo = demoById(t, 'placement');
+  const prefix = '../../../../';
+  const home = `${prefix}${locale}/`;
+  const langHrefs = Object.fromEntries(
+    LOCALES.map((l) => [l, `${prefix}${l}/${solutionPath(l, 'precheck')}${walkthroughPath(l)}`]),
+  ) as Record<Locale, string>;
+  const counts = Object.fromEntries(demo.segments.map((s) => [s.key, s.value]));
+
+  const profile = `<div class="wt-card wt-profile">
+            <p class="wt-badge">${escapeHtml(w.profile.badge)}</p>
+            <dl>${w.profile.fields.map((f) => `<div><dt>${escapeHtml(f.label)}</dt><dd>${escapeHtml(f.value)}</dd></div>`).join('')}</dl>
+          </div>`;
+  const codes = escapeHtml(w.guide.row.codes).replace(
+    w.guide.def.code,
+    `<mark>${w.guide.def.code}</mark>`,
+  );
+  const guide = `<div class="wt-doc">
+            <p class="wt-doc-head"><span class="wt-chip">${escapeHtml(w.guide.row.code)}</span><span class="wt-ref">${escapeHtml(w.guide.row.ref)}</span></p>
+            <p class="wt-doc-text">${escapeHtml(w.guide.row.text)}</p>
+            <p class="wt-doc-codes">${codes}</p>
+          </div>
+          <div class="wt-doc wt-doc-def">
+            <p class="wt-doc-head"><span class="wt-chip wt-chip-mark">${escapeHtml(w.guide.def.code)}</span><span class="wt-ref">${escapeHtml(w.guide.def.ref)}</span></p>
+            <p class="wt-doc-text">${escapeHtml(w.guide.def.text)}</p>
+          </div>
+          <ul class="wt-rules">${w.guide.rules.map((r) => `<li>${escapeHtml(r.text)} <span class="wt-ref">${escapeHtml(r.ref)}</span></li>`).join('')}</ul>`;
+  const groups = (['yes', 'check', 'no'] as const)
+    .map((g) => {
+      const row = w.sort.rows.find((r) => r.group === g)!;
+      return `<li class="wt-group wt-group-${g}">
+              <p class="wt-group-head"><span class="wt-count" data-count="${counts[g] ?? 0}">${counts[g] ?? 0}</span><span>${escapeHtml(w.sort.groups[g])}</span></p>
+              <div class="wt-row">
+                <p class="wt-row-code">ÖSYM ${escapeHtml(row.code)}</p>
+                <p class="wt-row-text">${escapeHtml(row.text)}</p>
+                <p class="wt-row-reason">${escapeHtml(row.reason)}</p>
+                <p class="wt-ref">${escapeHtml(row.ref)}</p>
+              </div>
+            </li>`;
+    })
+    .join('');
+  const sort = `<p class="wt-total">${escapeHtml(w.sort.totalsLabel)}</p><ol class="wt-groups">${groups}</ol>`;
+  const report = `<div class="wt-card wt-page">
+            <p class="wt-page-title">${escapeHtml(t.pages.precheck.meta.title)}</p>
+            <ul class="wt-page-lines">${w.report.lines.map((l) => `<li>${escapeHtml(l)}</li>`).join('')}</ul>
+            <p class="wt-check">✓ ${escapeHtml(w.report.check)}</p>
+            <p class="wt-caveat">${escapeHtml(w.report.caveat)}</p>
+          </div>`;
+  const scenes = [
+    wtScene(0, 4, 'profile', w.profile.step, w.profile.title, w.profile.body, profile),
+    wtScene(1, 4, 'guide', w.guide.step, w.guide.title, w.guide.body, guide),
+    wtScene(2, 4, 'sort', w.sort.step, w.sort.title, w.sort.body, sort),
+    wtScene(3, 4, 'report', w.report.step, w.report.title, w.report.body, report),
+  ].join('');
+  const dots = [w.profile.step, w.guide.step, w.sort.step, w.report.step]
+    .map(
+      (s, i) =>
+        `<li><button type="button" class="wt-dot" data-wt-go="${i}" aria-controls="wt-stage"><span class="wt-dot-n">${i + 1}</span>${escapeHtml(s)}</button></li>`,
+    )
+    .join('');
+  const sources = w.sources.items
+    .map(
+      (s) => `<li><a href="${escapeHtml(s.href)}" rel="noopener">${escapeHtml(s.label)}</a></li>`,
+    )
+    .join('');
+  const partner = config.partnershipsEmail ?? config.contactEmail ?? '';
+  const ctaHref = isValidEmail(partner) ? mailto(partner, w.cta.subject) : '#contact';
+  const alt: string[] = [];
+  if (isValidEmail(config.contactEmail))
+    alt.push(
+      `<a href="${mailto(config.contactEmail, w.cta.subject)}">${escapeHtml(config.contactEmail)}</a>`,
+    );
+  if (config.phone)
+    alt.push(
+      `<a href="tel:${escapeHtml(config.phone.e164)}">${escapeHtml(config.phone.display)}</a>`,
+    );
+
+  const main = `<section class="sol-hero wt-hero" aria-labelledby="wt-title">
+      <div class="wrap">
+        <p class="eyebrow">${escapeHtml(w.kicker)}</p>
+        <h1 id="wt-title" class="sol-title">${escapeHtml(w.title)}</h1>
+        <p class="lede">${escapeHtml(w.lede)}</p>
+        <p class="status status-concept">${escapeHtml(w.notice)}</p>
+      </div>
+    </section>
+    <section class="wt" data-walkthrough aria-label="${escapeHtml(w.meta.title)}">
+      <div class="wrap">
+        <div class="wt-controls" role="group" aria-label="${escapeHtml(w.controls.label)}">
+          <button type="button" class="chip" data-wt-prev aria-controls="wt-stage">← <span class="visually-hidden">${escapeHtml(w.controls.prev)}</span></button>
+          <button type="button" class="chip wt-toggle" data-wt-toggle aria-controls="wt-stage" data-play="${escapeHtml(w.controls.play)}" data-pause="${escapeHtml(w.controls.pause)}">${escapeHtml(w.controls.pause)}</button>
+          <button type="button" class="chip" data-wt-next aria-controls="wt-stage"><span class="visually-hidden">${escapeHtml(w.controls.next)}</span> →</button>
+          <ol class="wt-dots">${dots}</ol>
+        </div>
+        <div class="wt-progress" aria-hidden="true"><span data-wt-bar></span></div>
+        <div class="wt-stage" id="wt-stage" aria-live="polite">${scenes}</div>
+        <div class="wt-foot">
+          <div>
+            <p class="meta-label">${escapeHtml(w.sources.title)}</p>
+            <ul class="wt-sources">${sources}</ul>
+          </div>
+          ${renderDemoActions(demo, t, config.demosPublished, prefix, w.report.pdf)}
+        </div>
+      </div>
+    </section>
+    <section id="contact" class="contact" aria-labelledby="contact-title">
+      <div class="wrap contact-inner">
+        <h2 id="contact-title">${escapeHtml(w.cta.title)}</h2>
+        <p class="contact-body">${escapeHtml(w.cta.body)}</p>
+        <div class="contact-actions">
+          <a class="button button-primary button-large" href="${ctaHref}" data-testid="walkthrough-cta">${escapeHtml(w.cta.label)}</a>
+          ${alt.length ? `<p class="wt-alt">${escapeHtml(w.cta.alt)} ${alt.join(' · ')}</p>` : ''}
+        </div>
+      </div>
+    </section>`;
+  return renderChrome(config, t, { prefix, navBase: home, langHrefs }, main, year);
 }
