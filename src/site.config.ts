@@ -11,6 +11,8 @@ export interface SiteConfig {
   siteUrl: string | null;
   contactEmail: string | null;
   partnershipsEmail: string | null;
+  /** E.164 biçiminde telefon (tel: bağlantısı) ve görünen biçimi. */
+  phone: { e164: string; display: string } | null;
   city: string;
   /** false iken her sayfaya `noindex` eklenir. */
   indexable: boolean;
@@ -24,6 +26,7 @@ export const siteConfig: SiteConfig = {
   siteUrl: 'https://proofvane.com',
   contactEmail: 'hello@proofvane.com',
   partnershipsEmail: 'partnerships@proofvane.com',
+  phone: { e164: '+905421546037', display: '+90 542 154 60 37' },
   city: 'Ankara',
   indexable: true,
   demosPublished: true,

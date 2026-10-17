@@ -1,4 +1,5 @@
 import type { SiteText } from './types';
+import { PAGES } from './pages-tr';
 
 export const tr: SiteText = {
   locale: 'tr',
@@ -16,11 +17,13 @@ export const tr: SiteText = {
     footerNav: 'Alt menü',
     langNav: 'Dil seçimi',
     langNames: { tr: 'Türkçe', en: 'English' },
+    menu: 'Menü',
+    theme: { label: 'Tema', system: 'Sistem', light: 'Açık', dark: 'Koyu' },
   },
   nav: [
     { href: '#work', label: 'Çalışmalar' },
+    { href: '#solutions', label: 'Çözümler' },
     { href: '#services', label: 'Hizmetler' },
-    { href: '#method', label: 'Yöntem' },
     { href: '#contact', label: 'İletişim' },
   ],
   hero: {
@@ -37,47 +40,22 @@ export const tr: SiteText = {
       { id: 'reliability', label: 'Güvenilirlik', detail: 'Test · CI/CD · izleme' },
       { id: 'data', label: 'Veri', detail: 'Otomasyon ve doğrulama' },
     ],
-    demo: {
+    process: {
       label:
-        'Etkileşimli konsept: Bir mobil bakım uygulamasında görev tamamlanır; istek API’den, iş kuyruğundan ve veritabanından geçer, ardından bildirim gönderilir. Telefonu çevrimdışına alıp isteklerin cihazdaki kuyrukta beklediğini görebilirsiniz.',
-      caption:
-        'Konsept gösterim, müşteri projesi değildir. Tarayıcınızda çalışır; sayfadan veri çıkmaz.',
-      app: {
-        title: 'Bugün',
-        subtitle: 'Bakım ekibi · B Blok',
-        tasks: [
-          { id: '118', title: 'Asansör makine dairesi kontrolü', meta: 'Kat −1 · 09:30' },
-          { id: '124', title: 'Koridor aydınlatma değişimi', meta: 'Kat 4 · 11:00' },
-          { id: '131', title: 'Yangın kapısı denetimi', meta: 'Merdiven · 14:00' },
-        ],
-        action: 'Bitti',
-        synced: 'Senkronize',
-        queued: 'Ağ bekleniyor',
-        online: 'Çevrimiçi',
-        offline: 'Çevrimdışı',
-      },
-      nodes: [
-        { id: 'api', label: 'API', detail: 'POST /v1/tasks/:id/complete' },
-        { id: 'queue', label: 'İş kuyruğu', detail: 'bekleyerek yeniden dener' },
-        { id: 'db', label: 'Veritabanı', detail: 'idempotent yazma' },
-        { id: 'push', label: 'Bildirim', detail: 'APNs · FCM' },
+        'Temsilî süreç görseli: Bir mobil uygulama, bir web paneli ve onları besleyen backend sırasıyla tasarlanır, geliştirilir, test edilir ve yayınlanır.',
+      caption: 'Temsilî görsel: bir projenin dört aşaması.',
+      steps: [
+        { id: 'design', label: 'Tasarla', detail: 'Ekranlar ve akış' },
+        { id: 'build', label: 'Geliştir', detail: 'Mobil, web, backend' },
+        { id: 'test', label: 'Test et', detail: 'Otomatik testler' },
+        { id: 'ship', label: 'Yayınla', detail: 'Mağaza ve sunucu' },
       ],
-      controls: {
-        networkOff: 'Çevrimdışı yap',
-        networkOn: 'Bağlantıyı aç',
-        reset: 'Sıfırla',
-        hint: 'Bir görevde “Bitti”ye dokunun.',
-      },
-      log: {
-        title: 'Olay günlüğü',
-        idle: 'Bir işlem bekleniyor.',
-        optimistic: '{task}: önce cihazda tamamlandı',
-        request: 'POST /v1/tasks/{id}/complete · Idempotency-Key {key}',
-        accepted: 'API 202 · iş kuyruğa alındı',
-        stored: 'Worker bir kez kaydetti; tekrarlar yok sayılır',
-        notified: 'Ekip liderine bildirim gönderildi',
-        offline: 'Ağ yok: istek cihazdaki kuyrukta bekliyor',
-        reconnect: 'Bağlantı geldi: kuyruktaki {n} istek gönderiliyor',
+      scene: {
+        web: 'Web paneli',
+        mobile: 'Mobil uygulama',
+        backend: 'Backend',
+        checks: ['iOS', 'Android', 'Web'],
+        live: 'Yayında',
       },
     },
   },
@@ -205,6 +183,51 @@ export const tr: SiteText = {
         'Yeniden deneme kuyruğuyla çevrimdışı öncelikli veri',
       ],
       stack: 'Flutter, Dart, GitHub Actions, Fastlane, Firebase Crashlytics',
+      demoToggle:
+        'Teknik ayrıntı: çevrimdışı çalışan uygulama nasıl senkronize olur? (etkileşimli)',
+      demo: {
+        label:
+          'Etkileşimli konsept: Bir mobil bakım uygulamasında görev tamamlanır; istek API’den, iş kuyruğundan ve veritabanından geçer, ardından bildirim gönderilir. Telefonu çevrimdışına alıp isteklerin cihazdaki kuyrukta beklediğini görebilirsiniz.',
+        caption:
+          'Konsept gösterim, müşteri projesi değildir. Tarayıcınızda çalışır; sayfadan veri çıkmaz.',
+        app: {
+          title: 'Bugün',
+          subtitle: 'Bakım ekibi · B Blok',
+          tasks: [
+            { id: '118', title: 'Asansör makine dairesi kontrolü', meta: 'Kat −1 · 09:30' },
+            { id: '124', title: 'Koridor aydınlatma değişimi', meta: 'Kat 4 · 11:00' },
+            { id: '131', title: 'Yangın kapısı denetimi', meta: 'Merdiven · 14:00' },
+          ],
+          action: 'Bitti',
+          synced: 'Senkronize',
+          queued: 'Ağ bekleniyor',
+          online: 'Çevrimiçi',
+          offline: 'Çevrimdışı',
+        },
+        nodes: [
+          { id: 'api', label: 'API', detail: 'POST /v1/tasks/:id/complete' },
+          { id: 'queue', label: 'İş kuyruğu', detail: 'bekleyerek yeniden dener' },
+          { id: 'db', label: 'Veritabanı', detail: 'idempotent yazma' },
+          { id: 'push', label: 'Bildirim', detail: 'APNs · FCM' },
+        ],
+        controls: {
+          networkOff: 'Çevrimdışı yap',
+          networkOn: 'Bağlantıyı aç',
+          reset: 'Sıfırla',
+          hint: 'Bir görevde “Bitti”ye dokunun.',
+        },
+        log: {
+          title: 'Olay günlüğü',
+          idle: 'Bir işlem bekleniyor.',
+          optimistic: '{task}: önce cihazda tamamlandı',
+          request: 'POST /v1/tasks/{id}/complete · Idempotency-Key {key}',
+          accepted: 'API 202 · iş kuyruğa alındı',
+          stored: 'Worker bir kez kaydetti; tekrarlar yok sayılır',
+          notified: 'Ekip liderine bildirim gönderildi',
+          offline: 'Ağ yok: istek cihazdaki kuyrukta bekliyor',
+          reconnect: 'Bağlantı geldi: kuyruktaki {n} istek gönderiliyor',
+        },
+      },
       pipeline: {
         window: 'release / v2.4.0',
         stages: [
@@ -359,10 +382,26 @@ export const tr: SiteText = {
       },
     ],
   },
+  solutions: {
+    index: '03',
+    kicker: 'Sektör çözümleri',
+    title: 'Kamu verisiyle çalışan ekipler için iki hizmet.',
+    intro:
+      'Aynı mühendislik yaklaşımını, resmî kılavuz ve ilanlarla çalışan danışmanlar ve yayıncılar için iki hizmete dönüştürmeyi değerlendiriyoruz. Her ikisi de gerçek bir örnek çalışmaya dayanıyor.',
+    more: 'Nasıl çalıştığını görün',
+  },
+  solutionsPath: 'cozumler',
+  pages: PAGES,
+  notFound: {
+    title: 'Sayfa bulunamadı',
+    body: 'Aradığınız adres taşınmış ya da hiç var olmamış olabilir.',
+    home: 'Ana sayfaya dönün',
+  },
   contact: {
     title: 'Bir sonraki adım',
     body: 'Bir uygulama, entegrasyon ya da veri işi için ne yapmak istediğinizi birkaç cümleyle yazın. Kapsamı ilk görüşmede birlikte netleştiririz.',
     cta: 'E-posta gönderin',
+    phoneLabel: 'Telefon',
     emailLabel: 'Proje ve teklif',
     partnershipsLabel: 'İş birlikleri',
     fallback: 'İletişim adresi yakında.',

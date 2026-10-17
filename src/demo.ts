@@ -249,6 +249,7 @@ function initSync(root: HTMLElement, text: DemoText): void {
 
   drawWires();
   new ResizeObserver(drawWires).observe(stage);
+  root.closest('details')?.addEventListener('toggle', drawWires);
 }
 
 /* ------------------------------------------------------------- pipeline */

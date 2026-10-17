@@ -57,14 +57,32 @@ describe('içerik', () => {
       expect(listing.ui.rows[0]!.value).toBe('2026-10-22T23:59:00');
     }
   });
-  it.each(LOCALES)('%s: hero demosu ve sürüm hattı tutarlı', (l) => {
-    const d = TEXT[l].hero.demo;
+  it.each(LOCALES)('%s: senkron demosu ve sürüm hattı tutarlı', (l) => {
+    const d = TEXT[l].showcases.mobile.demo;
     expect(d.nodes.map((n) => n.id)).toEqual(['api', 'queue', 'db', 'push']);
     expect(d.app.tasks.length).toBeGreaterThan(0);
     const p = TEXT[l].showcases.mobile.pipeline;
     expect(p.stages.map((s) => s.id)).toContain(p.failAt);
     for (const key of ['request', 'optimistic', 'reconnect'] as const) {
       expect(d.log[key]).toMatch(/\{\w+\}/);
+    }
+  });
+  it.each(LOCALES)('%s: hero süreci dört adım, teknik ayrıntı içermez', (l) => {
+    const p = TEXT[l].hero.process;
+    expect(p.steps.map((s) => s.id)).toEqual(['design', 'build', 'test', 'ship']);
+    expect(JSON.stringify(p)).not.toMatch(/POST|\/v1\/|Idempotency|queue|kuyruk|API 202/i);
+  });
+  it.each(LOCALES)('%s: çözüm sayfaları doğrulanmış örneğe dayanır', (l) => {
+    const t = TEXT[l];
+    expect(t.pages.precheck.demoId).toBe('placement');
+    expect(t.pages.listing.demoId).toBe('listing');
+    expect(t.pages.listing.checks.items).toHaveLength(11);
+    // Nitelik uygunluğu atanma ihtimaliyle karıştırılmaz; canlı ürün iddiası yok.
+    expect(t.pages.precheck.notice).toMatch(
+      l === 'tr' ? /atanma ihtimali/ : /chance of being placed/,
+    );
+    for (const page of Object.values(t.pages)) {
+      expect(page.notice).toMatch(l === 'tr' ? /değerlendir/ : /considering/);
     }
   });
   it('vaka sonuç metinleri grafik sayılarını içerir', () => {

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   escapeHtml,
+  renderNotFoundBody,
+  renderSolutionBody,
+  renderSolutionHead,
+  SOLUTION_KEYS,
+  solutionPath,
   isValidEmail,
   renderBody,
   renderChart,
@@ -47,7 +52,7 @@ describe('örnek çalışmalar', () => {
 
   it.each(LOCALES)('%s: her örnek kendi dilindeki tek sayfalık özete bağlanır', (l) => {
     const links = [...renderBody(siteConfig, l).matchAll(/href="([^"]+\.pdf)"/g)].map((m) => m[1]);
-    expect(links).toEqual(TEXT[l].work.items.map((d) => `../ornekler/${d.pdf}`));
+    expect([...links].sort()).toEqual(TEXT[l].work.items.map((d) => `../ornekler/${d.pdf}`).sort());
   });
 
   it('grafik her segmenti erişilebilir metin ve görünür lejantla verir', () => {
@@ -166,9 +171,16 @@ describe.each(LOCALES)('%s sayfası', (l) => {
     expect(body).toContain(`>${t.a11y.skip}</a>`);
     expect(body).toContain(`aria-label="${t.a11y.mainNav}"`);
     expect(body).toContain(
-      `<figcaption id="sync-caption" class="sync-caption">${escapeHtml(t.hero.demo.caption)}</figcaption>`,
+      `<figcaption id="process-caption" class="process-caption">${escapeHtml(t.hero.process.caption)}</figcaption>`,
     );
-    expect(body).toContain(`<p class="visually-hidden">${escapeHtml(t.hero.demo.label)}</p>`);
+    expect(body).toContain(`<p class="visually-hidden">${escapeHtml(t.hero.process.label)}</p>`);
+    expect(body).toContain(`aria-label="${t.a11y.theme.label}"`);
+    expect(body).toContain('aria-controls="site-menu"');
+  });
+
+  it('iletişim: e-posta ve tıklanabilir telefon', () => {
+    expect(body).toContain('href="tel:+905421546037"');
+    expect(body).toContain('+90 542 154 60 37');
   });
 
   it('alt bilgide ticari unvan ve yıl', () => {
@@ -181,46 +193,95 @@ describe.each(LOCALES)('%s sayfası', (l) => {
     expect(titles).toEqual(['flutter', 'web', 'api', 'automation', 'verification']);
   });
 
-  it('sınav/kamu ilanı ifadeleri yalnızca veri doğrulama bölümünde geçer (hero ve ilk vitrinlerde yok)', () => {
+  it('ilk ekranda (hero) teknik ayrıntı ve sınav/ilan ifadesi yok', () => {
+    const hero = body.slice(body.indexOf('<section class="hero"'), body.indexOf('</section>'));
+    expect(hero).not.toMatch(/POST |\/v1\/|Idempotency|<code/);
+    expect(hero).not.toMatch(/kpss|ösym|ilan|placement|listing/i);
+  });
+
+  it('sınav/kamu ilanı ifadeleri yalnızca sektör çözümleri bölümünde geçer', () => {
     const exam =
-      /kpss|ösym|atanma|kamu ilan|kamu veri|tercih|placement|public-sector|kariyer kapısı|millî saraylar|milli saraylar|national palaces|ilan/i;
-    const i = body.indexOf('<section id="data-work"');
+      /kpss|ösym|atanma|kamu ilan|tercih|placement|public-sector|kariyer kapısı|millî saraylar|national palaces|ilan/i;
+    const i = body.indexOf('<section id="solutions"');
     expect(i).toBeGreaterThan(-1);
     const j = body.indexOf('</section>', i) + '</section>'.length;
     expect(body.slice(0, i) + body.slice(j)).not.toMatch(exam);
     expect(head.replace(/<script[\s\S]*?<\/script>/, '')).not.toMatch(exam);
   });
 
-  it('bölüm sırası: hero, mobil, sistemler, veri, hizmetler', () => {
-    const order = ['class="hero"', 'id="work"', 'id="systems"', 'id="data-work"', 'id="services"'];
+  it('bölüm sırası: hero, mobil, sistemler, çözümler, hizmetler', () => {
+    const order = ['class="hero"', 'id="work"', 'id="systems"', 'id="solutions"', 'id="services"'];
     const pos = order.map((m) => body.indexOf(m));
     expect(pos.every((p) => p > -1)).toBe(true);
     expect([...pos].sort((a, b) => a - b)).toEqual(pos);
   });
 
-  it('demo metinleri çalıştırılmayan JSON veri bloğudur', () => {
+  it('etkileşimli demo isteğe bağlı ve kapalı gelir', () => {
+    expect(body).toMatch(/<details class="tech" data-tech>\s*<summary>/);
+    expect(body).not.toMatch(/<details class="tech"[^>]*open/);
     const m = body.match(/<script type="application\/json" id="demo-text">([\s\S]*?)<\/script>/);
     const data = JSON.parse(m![1]!) as { log: { idle: string } };
-    expect(data.log.idle).toBe(t.hero.demo.log.idle);
+    expect(data.log.idle).toBe(t.showcases.mobile.demo.log.idle);
   });
 
-  it('konsept ve gerçek çalışma ayrı etiketlenir; vaka arayüzleri temsilî', () => {
-    expect(body).toContain(`<figcaption id="sync-caption" class="sync-caption">`);
+  it('çözüm kartları çözüm sayfalarına göreli bağlanır', () => {
+    for (const key of SOLUTION_KEYS) expect(body).toContain(`href="${solutionPath(l, key)}"`);
+  });
+
+  it('konsept ve gerçek çalışma ayrı etiketlenir', () => {
     expect(body).toContain(
       `<p class="status status-concept">${escapeHtml(t.showcases.mobile.status)}</p>`,
     );
     expect(body).toContain(
       `<p class="status status-real">${escapeHtml(t.showcases.systems.status)}</p>`,
     );
-    expect(t.hero.demo.caption).toMatch(
+    expect(t.showcases.mobile.demo.caption).toMatch(
       l === 'tr' ? /müşteri projesi değildir/ : /not a customer project/,
     );
-    expect(t.showcases.mobile.status).toMatch(
-      l === 'tr' ? /müşteri projesi değildir/ : /not a customer project/,
-    );
-    const cases = body.match(/<figure class="case-visual">/g) ?? [];
-    expect(cases).toHaveLength(t.work.items.length);
-    expect(body.split(escapeHtml(t.work.representative)).length - 1).toBe(t.work.items.length);
+  });
+
+  describe.each(SOLUTION_KEYS)('çözüm sayfası: %s', (key) => {
+    const page = t.pages[key];
+    const sHead = renderSolutionHead(siteConfig, l, key);
+    const sBody = renderSolutionBody(siteConfig, l, key, 2026);
+    const other = LOCALES.find((x) => x !== l)!;
+    it('canonical ve hreflang iki dildeki karşılığı gösterir', () => {
+      expect(sHead).toContain(
+        `<link rel="canonical" href="https://proofvane.com/${l}/${solutionPath(l, key)}" />`,
+      );
+      expect(sHead).toContain(
+        `hreflang="${other}" href="https://proofvane.com/${other}/${solutionPath(other, key)}"`,
+      );
+      expect(sHead).toContain(`<title>${escapeHtml(page.meta.title)} | Proofvane</title>`);
+    });
+    it('tek h1, CTA konulu mailto, PDF ve sınır notu', () => {
+      expect(sBody.match(/<h1[\s>]/g)).toHaveLength(1);
+      expect(sBody).toContain(
+        `mailto:hello@proofvane.com${escapeHtml(`?subject=${encodeURIComponent(page.cta.subject)}`)}`,
+      );
+      expect(sBody).toContain(`>${escapeHtml(page.cta.label)}</a>`);
+      expect(sBody).toMatch(/href="\.\.\/\.\.\/\.\.\/ornekler\/[^"]+\.pdf"/);
+      expect(sBody).toContain(escapeHtml(page.notice));
+      expect(sBody).toContain('href="tel:+905421546037"');
+    });
+    it('dil seçici karşı dildeki aynı çözüm sayfasına gider', () => {
+      expect(sBody).toContain(
+        `href="../../../${other}/${solutionPath(other, key)}" hreflang="${other}"`,
+      );
+    });
+    it('teknik ayrıntı (endpoint, kod) içermez', () => {
+      expect(sBody).not.toMatch(/POST |\/v1\/|Idempotency|<code|<details/);
+    });
+  });
+});
+
+describe('404', () => {
+  it('iki dilli, köke göre mutlak bağlantılar', () => {
+    const body = renderNotFoundBody(siteConfig);
+    expect(body).toContain('href="/tr/"');
+    expect(body).toContain('href="/en/"');
+    expect(body).toContain('lang="tr"');
+    expect(body).toContain('lang="en"');
   });
 });
 

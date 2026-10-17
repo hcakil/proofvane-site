@@ -7,6 +7,7 @@ import '@fontsource-variable/geist';
 import '@fontsource-variable/geist-mono';
 import './styles.css';
 import { initDemos } from './demo';
+import { initMenu, initTheme } from './theme';
 import { isLocale, writeStored } from './locale';
 
 function safeStorage(): Storage | undefined {
@@ -24,4 +25,6 @@ document.addEventListener('click', (event) => {
 });
 
 document.documentElement.classList.add('js');
+initTheme();
+initMenu();
 initDemos();

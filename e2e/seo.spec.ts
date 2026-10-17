@@ -39,8 +39,17 @@ for (const l of ['tr', 'en'] as const) {
   });
 }
 
-test('sitemap iki dili hreflang ile listeler', async ({ request }) => {
+test('sitemap ana sayfaları ve çözüm sayfalarını iki dilde listeler', async ({ request }) => {
   const xml = await (await request.get('/sitemap.xml')).text();
-  for (const l of ['tr', 'en']) expect(xml).toContain(`<loc>https://proofvane.com/${l}/</loc>`);
-  expect(xml.match(/hreflang="x-default"/g)).toHaveLength(2);
+  for (const path of [
+    'tr/',
+    'en/',
+    'tr/cozumler/tercih-on-kontrol/',
+    'tr/cozumler/ilan-dogrulama/',
+    'en/solutions/placement-precheck/',
+    'en/solutions/listing-verification/',
+  ]) {
+    expect(xml).toContain(`<loc>https://proofvane.com/${path}</loc>`);
+  }
+  expect(xml.match(/hreflang="x-default"/g)).toHaveLength(6);
 });

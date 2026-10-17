@@ -50,6 +50,45 @@ export interface HeroDemo {
   };
 }
 
+/**
+ * Hero'daki otomatik süreç görseli: bir projenin dört aşaması (tasarla,
+ * geliştir, test et, yayınla). Tıklama gerektirmez; 10 saniyelik döngü.
+ */
+export interface ProcessVisual {
+  label: string;
+  caption: string;
+  steps: { id: 'design' | 'build' | 'test' | 'ship'; label: string; detail: string }[];
+  scene: {
+    web: string;
+    mobile: string;
+    backend: string;
+    checks: string[];
+    live: string;
+  };
+}
+
+/** Sektöre özel çözüm sayfası (ör. /tr/cozumler/tercih-on-kontrol/). */
+export interface SolutionPage {
+  key: 'precheck' | 'listing';
+  slug: string;
+  /** Sayfanın dayandığı doğrulanmış örnek (`work.items` içindeki kimlik). */
+  demoId: 'placement' | 'listing';
+  meta: { title: string; description: string };
+  audience: string;
+  title: string;
+  lede: string;
+  /** Hizmetin durumu ve sınırı: canlı ürün değil, kontrollü insan incelemesi. */
+  notice: string;
+  cta: { label: string; subject: string };
+  pdfCta: string;
+  problem: { title: string; body: string };
+  steps: { title: string; items: { title: string; body: string }[] };
+  demo: { title: string; body: string; note: string };
+  checks: { title: string; intro: string; items: string[] };
+  limits: { title: string; items: string[] };
+  closing: { title: string; body: string };
+}
+
 export interface Capability {
   id: string;
   label: string;
@@ -70,6 +109,9 @@ interface ShowcaseBase {
 /** Vitrin 1: mobil mühendislik ve uygulama güvenilirliği (tarayıcıda simülasyon). */
 export interface MobileShowcase extends ShowcaseBase {
   points: string[];
+  /** İsteğe bağlı teknik ayrıntı: etkileşimli senkron demosu (kapalı gelir). */
+  demoToggle: string;
+  demo: HeroDemo;
   pipeline: {
     window: string;
     stages: { id: string; label: string; detail: string }[];
@@ -162,6 +204,8 @@ export interface SiteText {
     footerNav: string;
     langNav: string;
     langNames: Record<Locale, string>;
+    menu: string;
+    theme: { label: string; system: string; light: string; dark: string };
   };
   nav: Link[];
   hero: {
@@ -171,7 +215,7 @@ export interface SiteText {
     secondaryCta: Link;
     eyebrow: string;
     capabilities: Capability[];
-    demo: HeroDemo;
+    process: ProcessVisual;
   };
   services: {
     title: string;
@@ -202,10 +246,23 @@ export interface SiteText {
     outcomeLabel: string;
     items: Demo[];
   };
+  /** Ana sayfadaki sektör çözümleri bölümü (vitrin 3). */
+  solutions: {
+    index: string;
+    kicker: string;
+    title: string;
+    intro: string;
+    more: string;
+  };
+  /** Çözüm sayfalarının dil klasörü altındaki yolu: "cozumler" / "solutions". */
+  solutionsPath: string;
+  pages: Record<SolutionPage['key'], SolutionPage>;
+  notFound: { title: string; body: string; home: string };
   contact: {
     title: string;
     body: string;
     cta: string;
+    phoneLabel: string;
     emailLabel: string;
     partnershipsLabel: string;
     fallback: string;

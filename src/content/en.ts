@@ -1,4 +1,5 @@
 import type { SiteText } from './types';
+import { PAGES } from './pages-en';
 
 export const en: SiteText = {
   locale: 'en',
@@ -16,11 +17,13 @@ export const en: SiteText = {
     footerNav: 'Footer menu',
     langNav: 'Language',
     langNames: { tr: 'Türkçe', en: 'English' },
+    menu: 'Menu',
+    theme: { label: 'Theme', system: 'System', light: 'Light', dark: 'Dark' },
   },
   nav: [
     { href: '#work', label: 'Work' },
+    { href: '#solutions', label: 'Solutions' },
     { href: '#services', label: 'Services' },
-    { href: '#method', label: 'Method' },
     { href: '#contact', label: 'Contact' },
   ],
   hero: {
@@ -37,47 +40,22 @@ export const en: SiteText = {
       { id: 'reliability', label: 'Reliability', detail: 'Tests · CI/CD · monitoring' },
       { id: 'data', label: 'Data', detail: 'Automation and verification' },
     ],
-    demo: {
+    process: {
       label:
-        'Interactive concept: in a mobile maintenance app a task is marked done; the request passes through an API, a job queue and a database, and a notification is sent. You can switch the phone offline to see requests wait in an on-device queue.',
-      caption:
-        'Concept demo, not a customer project. It runs in your browser; no data leaves the page.',
-      app: {
-        title: 'Today',
-        subtitle: 'Maintenance crew · Block B',
-        tasks: [
-          { id: '118', title: 'Check lift motor room', meta: 'Floor −1 · 09:30' },
-          { id: '124', title: 'Replace corridor lighting', meta: 'Floor 4 · 11:00' },
-          { id: '131', title: 'Fire door inspection', meta: 'Stairwell · 14:00' },
-        ],
-        action: 'Done',
-        synced: 'Synced',
-        queued: 'Waiting for network',
-        online: 'Online',
-        offline: 'Offline',
-      },
-      nodes: [
-        { id: 'api', label: 'API', detail: 'POST /v1/tasks/:id/complete' },
-        { id: 'queue', label: 'Job queue', detail: 'retries with backoff' },
-        { id: 'db', label: 'Database', detail: 'idempotent write' },
-        { id: 'push', label: 'Notifications', detail: 'APNs · FCM' },
+        'Representative process visual: a mobile app, a web panel and the backend behind them are designed, built, tested and released, one step after another.',
+      caption: 'Representative visual: the four stages of a project.',
+      steps: [
+        { id: 'design', label: 'Design', detail: 'Screens and flows' },
+        { id: 'build', label: 'Build', detail: 'Mobile, web, backend' },
+        { id: 'test', label: 'Test', detail: 'Automated tests' },
+        { id: 'ship', label: 'Release', detail: 'Stores and servers' },
       ],
-      controls: {
-        networkOff: 'Go offline',
-        networkOn: 'Back online',
-        reset: 'Reset',
-        hint: 'Tap “Done” on a task.',
-      },
-      log: {
-        title: 'Event log',
-        idle: 'Waiting for an action.',
-        optimistic: '{task}: done on the device first',
-        request: 'POST /v1/tasks/{id}/complete · Idempotency-Key {key}',
-        accepted: 'API 202 · job queued',
-        stored: 'Worker saved it once; repeats are ignored',
-        notified: 'Notification sent to the crew lead',
-        offline: 'No network: request kept in the on-device queue',
-        reconnect: 'Network back: sending {n} queued request(s)',
+      scene: {
+        web: 'Web panel',
+        mobile: 'Mobile app',
+        backend: 'Backend',
+        checks: ['iOS', 'Android', 'Web'],
+        live: 'Live',
       },
     },
   },
@@ -205,6 +183,50 @@ export const en: SiteText = {
         'Offline-first data with a retry queue',
       ],
       stack: 'Flutter, Dart, GitHub Actions, Fastlane, Firebase Crashlytics',
+      demoToggle: 'Technical detail: how does an offline-capable app sync? (interactive)',
+      demo: {
+        label:
+          'Interactive concept: in a mobile maintenance app a task is marked done; the request passes through an API, a job queue and a database, and a notification is sent. You can switch the phone offline to see requests wait in an on-device queue.',
+        caption:
+          'Concept demo, not a customer project. It runs in your browser; no data leaves the page.',
+        app: {
+          title: 'Today',
+          subtitle: 'Maintenance crew · Block B',
+          tasks: [
+            { id: '118', title: 'Check lift motor room', meta: 'Floor −1 · 09:30' },
+            { id: '124', title: 'Replace corridor lighting', meta: 'Floor 4 · 11:00' },
+            { id: '131', title: 'Fire door inspection', meta: 'Stairwell · 14:00' },
+          ],
+          action: 'Done',
+          synced: 'Synced',
+          queued: 'Waiting for network',
+          online: 'Online',
+          offline: 'Offline',
+        },
+        nodes: [
+          { id: 'api', label: 'API', detail: 'POST /v1/tasks/:id/complete' },
+          { id: 'queue', label: 'Job queue', detail: 'retries with backoff' },
+          { id: 'db', label: 'Database', detail: 'idempotent write' },
+          { id: 'push', label: 'Notifications', detail: 'APNs · FCM' },
+        ],
+        controls: {
+          networkOff: 'Go offline',
+          networkOn: 'Back online',
+          reset: 'Reset',
+          hint: 'Tap “Done” on a task.',
+        },
+        log: {
+          title: 'Event log',
+          idle: 'Waiting for an action.',
+          optimistic: '{task}: done on the device first',
+          request: 'POST /v1/tasks/{id}/complete · Idempotency-Key {key}',
+          accepted: 'API 202 · job queued',
+          stored: 'Worker saved it once; repeats are ignored',
+          notified: 'Notification sent to the crew lead',
+          offline: 'No network: request kept in the on-device queue',
+          reconnect: 'Network back: sending {n} queued request(s)',
+        },
+      },
       pipeline: {
         window: 'release / v2.4.0',
         stages: [
@@ -366,10 +388,26 @@ export const en: SiteText = {
       },
     ],
   },
+  solutions: {
+    index: '03',
+    kicker: 'Sector solutions',
+    title: 'Two services for teams that work with public-sector data.',
+    intro:
+      'We are exploring two services that apply the same engineering approach for advisers and publishers who work with official guides and job listings in Türkiye. Both are based on a real sample project.',
+    more: 'See how it works',
+  },
+  solutionsPath: 'solutions',
+  pages: PAGES,
+  notFound: {
+    title: 'Page not found',
+    body: 'The address may have moved or may never have existed.',
+    home: 'Back to the home page',
+  },
   contact: {
     title: 'Next step',
     body: 'Write a few sentences about the app, integration or data work you have in mind. We agree the scope together in a first call.',
     cta: 'Send an email',
+    phoneLabel: 'Phone',
     emailLabel: 'Projects and quotes',
     partnershipsLabel: 'Partnerships',
     fallback: 'Contact address coming soon.',
