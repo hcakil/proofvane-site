@@ -48,8 +48,10 @@ test('sitemap ana sayfaları ve çözüm sayfalarını iki dilde listeler', asyn
     'tr/cozumler/ilan-dogrulama/',
     'en/solutions/placement-precheck/',
     'en/solutions/listing-verification/',
+    'tr/cozumler/tercih-on-kontrol/nasil-calisir/',
+    'en/solutions/placement-precheck/how-it-works/',
   ]) {
     expect(xml).toContain(`<loc>https://proofvane.com/${path}</loc>`);
   }
-  expect(xml.match(/hreflang="x-default"/g)).toHaveLength(6);
+  expect(xml.match(/hreflang="x-default"/g)).toHaveLength(8);
 });

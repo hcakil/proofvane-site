@@ -73,8 +73,8 @@ export const WALKTHROUGH: Record<Locale, Walkthrough> = {
     notice:
       'Kurgusal aday, örnek analiz. Otomatik ya da canlı bir atama hizmeti değildir; nitelik uygunluğu atanma ihtimali anlamına gelmez.',
     kicker: 'Tercih ön kontrolü · nasıl çalışır',
-    title: 'Koç, öğrencilerin şartlarını tek tek aramak yerine kaynaklı bir ön inceleme alır.',
-    lede: 'Aşağıdaki dört adım kendiliğinden ilerler; istediğiniz yerde durdurabilir ya da adımlar arasında gezinebilirsiniz.',
+    title: 'Tercih ön kontrolü dört adımda.',
+    lede: 'Koç, öğrencilerin şartlarını kılavuzda tek tek aramak yerine kaynaklı bir ön inceleme alır. Anlatım 22 saniye sürer; istediğiniz yerde durdurabilirsiniz.',
     controls: {
       label: 'Anlatım kontrolleri',
       play: 'Oynat',
@@ -90,32 +90,31 @@ export const WALKTHROUGH: Record<Locale, Walkthrough> = {
       badge: 'Kurgusal aday',
       fields: [
         { label: 'Öğrenim', value: 'Lisans' },
-        { label: 'Bölüm', value: 'İşletme (örgün) · ÖSYM alan kodu 3226' },
+        { label: 'Bölüm', value: 'İşletme (örgün)' },
         { label: 'Puan', value: '2024-KPSS P3: 78,00' },
-        { label: 'Bölge', value: '13 il' },
+        { label: 'İstediği iller', value: '13 il' },
       ],
     },
     guide: {
       step: 'Kılavuz',
-      title: 'Her kadronun şartı resmî kılavuzdaki kodlarla okunur.',
-      body: 'Kadro satırı, nitelik kodunun tanımı ve kodların nasıl birleştiği aynı kaynaktan, sayfa numarasıyla alınır.',
+      title: 'Her kadronun şartı resmî kılavuzdan okunur.',
+      body: 'ÖSYM her kadro için kabul ettiği bölümleri kodla yazar. Örnek kadro İşletme’yi 4431 koduyla kabul ediyor.',
       row: {
         code: 'ÖSYM 302010486',
         text: 'Çevre, Şehircilik ve İklim Değişikliği Bakanlığı · Büro Personeli (sözleşmeli) · Ankara · 17 kadro',
-        codes: 'Nitelik kodları: 4421 4429 4431 4449 4459 4475 4503 4505',
+        codes: 'Kabul edilen bölüm kodlarından biri: 4431',
         ref: 'Tablo 3, PDF s. 2',
       },
       def: {
         code: '4431',
-        text: 'İşletme lisans programını kapsayan öğrenim kodu',
+        text: '4431 = İşletme bölümü mezunları',
         ref: 'Lisans nitelik kodları, PDF s. 6',
       },
       rules: [
         {
-          text: 'Birden çok öğrenim kodu varsa biri yeterlidir (VEYA).',
+          text: 'Bölüm kodlarından biri yeter; varsa ek şartların hepsi aranır.',
           ref: 'Kılavuz, PDF s. 2 ve s. 12',
         },
-        { text: 'Diğer özel şartların hepsi gerekir (VE).', ref: 'Kılavuz, PDF s. 12' },
       ],
     },
     sort: {
@@ -128,21 +127,21 @@ export const WALKTHROUGH: Record<Locale, Walkthrough> = {
           group: 'yes',
           code: '302010486',
           text: 'Çevre, Şehircilik ve İklim Değişikliği Bak. · Büro Personeli · Ankara · 17',
-          reason: '4431 profili kapsıyor; ek şart yok.',
+          reason: 'Bölüm kabul ediliyor, ek şart yok.',
           ref: 'Tablo 3, PDF s. 2',
         },
         {
           group: 'check',
           code: '302012509',
           text: 'TCDD Taşımacılık A.Ş. · Memur · Ankara · 1',
-          reason: '4431 kapsıyor; ek şart 7368 için kılavuzdaki başvuru özel şartlarına bakılmalı.',
+          reason: 'Bölüm kabul ediliyor; ek bir şart (7368) kılavuzdan teyit edilmeli.',
           ref: 'Tablo 3, PDF s. 12 · Özel koşullar, PDF s. 5',
         },
         {
           group: 'no',
           code: '302010948',
           text: 'Çevre, Şehircilik ve İklim Değişikliği Bak. · Mühendis · Aksaray · 2',
-          reason: 'Öğrenim kodu 4677 İşletme’yi kapsamıyor.',
+          reason: 'Kadro İşletme bölümünü kabul etmiyor.',
           ref: 'Tablo 3, PDF s. 5',
         },
       ],
@@ -158,9 +157,9 @@ export const WALKTHROUGH: Record<Locale, Walkthrough> = {
         'Kontrol gerektiren kadrolarda bakılacak şart',
       ],
       check:
-        'İnsan kontrolü: 13 satır iki belgede elle karşılaştırıldı; toplam 39 kontrol, 0 uyumsuzluk.',
+        'İnsan kontrolü: örnek satırlar kılavuzla tek tek karşılaştırıldı; 39 kontrol, 0 uyumsuzluk.',
       caveat:
-        'Nitelik uygunluğu ≠ atanma: örnekteki uygun kadronun 2025/2 en küçük puanı 80,71056; kurgusal aday 78,00.',
+        'Uygun çıkmak atanmak demek değil: bu kadroya geçen dönem (2025/2) en düşük 80,71 puanla yerleşildi; örnek adayın puanı 78,00.',
       pdf: 'Örnek raporun tek sayfalık özeti',
     },
     sources: {
@@ -190,9 +189,8 @@ export const WALKTHROUGH: Record<Locale, Walkthrough> = {
     notice:
       'Fictional candidate, sample analysis. This is not an automated or live placement service; meeting the qualifications is not the chance of being placed.',
     kicker: 'Placement pre-check · how it works',
-    title:
-      'Instead of checking each student’s conditions by hand, the adviser gets a sourced pre-review.',
-    lede: 'The four steps below play on their own; you can pause or move between steps at any time.',
+    title: 'The placement pre-check in four steps.',
+    lede: 'Instead of looking up each student’s conditions in the guide, the adviser gets a sourced pre-review. The walkthrough takes 22 seconds; pause it at any point.',
     controls: {
       label: 'Walkthrough controls',
       play: 'Play',
@@ -208,32 +206,31 @@ export const WALKTHROUGH: Record<Locale, Walkthrough> = {
       badge: 'Fictional candidate',
       fields: [
         { label: 'Education', value: 'Bachelor’s degree' },
-        { label: 'Field', value: 'Business Administration (on-campus) · ÖSYM field code 3226' },
+        { label: 'Field', value: 'Business Administration (on-campus)' },
         { label: 'Score', value: '2024-KPSS P3: 78.00' },
-        { label: 'Region', value: '13 provinces' },
+        { label: 'Preferred provinces', value: '13 provinces' },
       ],
     },
     guide: {
       step: 'Guide',
-      title: 'Each post’s conditions are read from the codes in the official guide.',
-      body: 'The post row, the definition of the qualification code and the rule for combining codes all come from the same source, with page numbers.',
+      title: 'Each post’s conditions come from the official guide.',
+      body: 'ÖSYM lists the degrees each post accepts as codes. The sample post accepts Business Administration through code 4431.',
       row: {
         code: 'ÖSYM 302010486',
         text: 'Ministry of Environment, Urbanisation and Climate Change · Office staff (contract) · Ankara · 17 posts',
-        codes: 'Qualification codes: 4421 4429 4431 4449 4459 4475 4503 4505',
+        codes: 'One of the accepted degree codes: 4431',
         ref: 'Table 3, PDF p. 2',
       },
       def: {
         code: '4431',
-        text: 'Education code that covers the Business Administration degree',
+        text: '4431 = Business Administration graduates',
         ref: 'Bachelor’s qualification codes, PDF p. 6',
       },
       rules: [
         {
-          text: 'Where several education codes are listed, one is enough (OR).',
+          text: 'One accepted degree code is enough; any extra conditions must all be met.',
           ref: 'Guide, PDF p. 2 and p. 12',
         },
-        { text: 'All other special conditions are required (AND).', ref: 'Guide, PDF p. 12' },
       ],
     },
     sort: {
@@ -246,7 +243,7 @@ export const WALKTHROUGH: Record<Locale, Walkthrough> = {
           group: 'yes',
           code: '302010486',
           text: 'Ministry of Environment, Urbanisation and Climate Change · Office staff · Ankara · 17',
-          reason: '4431 covers the profile; no extra condition.',
+          reason: 'The degree is accepted; no extra condition.',
           ref: 'Table 3, PDF p. 2',
         },
         {
@@ -254,14 +251,14 @@ export const WALKTHROUGH: Record<Locale, Walkthrough> = {
           code: '302012509',
           text: 'TCDD Taşımacılık A.Ş. · Officer · Ankara · 1',
           reason:
-            '4431 covers it; extra condition 7368 refers to the guide’s special application conditions.',
+            'The degree is accepted; one extra condition (7368) must be confirmed in the guide.',
           ref: 'Table 3, PDF p. 12 · Special conditions, PDF p. 5',
         },
         {
           group: 'no',
           code: '302010948',
           text: 'Ministry of Environment, Urbanisation and Climate Change · Engineer · Aksaray · 2',
-          reason: 'Education code 4677 does not cover Business Administration.',
+          reason: 'The post does not accept Business Administration.',
           ref: 'Table 3, PDF p. 5',
         },
       ],
@@ -277,9 +274,9 @@ export const WALKTHROUGH: Record<Locale, Walkthrough> = {
         'The condition to confirm for posts that need checking',
       ],
       check:
-        'Human check: 13 rows compared by hand in two documents; 39 checks in total, 0 mismatches.',
+        'Human check: sample rows compared one by one with the guide; 39 checks, 0 mismatches.',
       caveat:
-        'Qualification ≠ placement: the eligible sample post had a lowest score of 80.71056 in 2025/2; the fictional candidate has 78.00.',
+        'Eligible is not the same as placed: last period (2025/2) the lowest placed score for this post was 80.71; the sample candidate has 78.00.',
       pdf: 'One-page summary of the sample report',
     },
     sources: {

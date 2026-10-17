@@ -3117,7 +3117,11 @@ html:not(.js) .tech {
 }
 
 .wt-hero {
-  padding-bottom: clamp(1.5rem, 3vw, 2.5rem);
+  padding-block: clamp(1.75rem, 4vw, 3rem) clamp(1rem, 2vw, 1.5rem);
+}
+
+.wt-hero .lede {
+  max-width: 46rem;
 }
 
 .wt-hero .status {

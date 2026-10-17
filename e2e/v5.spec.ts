@@ -145,6 +145,7 @@ for (const [l, path] of [
       await page.goto(path);
       const active = page.locator('.wt-scene.is-active');
       await expect(active).toHaveAttribute('data-scene', '0');
+      await page.locator('.wt-stage').scrollIntoViewIfNeeded();
       await expect(active).toHaveAttribute('data-scene', '1', { timeout: 8000 });
       await page.locator('[data-wt-toggle]').click();
       await expect(page.locator('[data-wt-toggle]')).toHaveAttribute('aria-pressed', 'false');

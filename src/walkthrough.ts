@@ -1,5 +1,5 @@
 // "Nasıl çalışır" anlatımı: dört sahne kendiliğinden ilerler (sahne başı
-// 5,5 sn, toplam 22 sn) ve son sahnede durur. Önceki/sonraki, durdur/oynat
+// 5,5 sn, toplam 22 sn) ve son sahnede durur. Sahne görünür olunca başlar. Önceki/sonraki, durdur/oynat
 // ve adım düğmeleri; sol/sağ ok tuşları. Hareket azaltma tercihinde otomatik
 // oynatma kapalı başlar. Betik yoksa dört sahne alt alta görünür.
 
@@ -16,7 +16,10 @@ export function initWalkthrough(): void {
 
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   let index = 0;
-  let playing = !reduced;
+  // Otomatik oynatma, sahne ekranda görünür olunca başlar (yoksa ilk adım
+  // kullanıcı kaydırmadan geçip gider). Kullanıcı bir düğmeye bastıysa başlamaz.
+  let playing = false;
+  let touched = false;
   let timer = 0;
   let barAnim: Animation | null = null;
 
@@ -86,6 +89,25 @@ export function initWalkthrough(): void {
   function go(i: number): void {
     index = (i + scenes.length) % scenes.length;
     render();
+  }
+
+  root.addEventListener('click', (e) => {
+    if ((e.target as Element).closest('button')) touched = true;
+  });
+  const stage = root.querySelector<HTMLElement>('.wt-stage');
+  if (!reduced && stage && 'IntersectionObserver' in window) {
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((en) => en.isIntersecting) && !touched) {
+          io.disconnect();
+          index = 0;
+          playing = true;
+          render();
+        }
+      },
+      { threshold: 0.5 },
+    );
+    io.observe(stage);
   }
 
   root.querySelector('[data-wt-prev]')?.addEventListener('click', () => go(index - 1));

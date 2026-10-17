@@ -36,4 +36,16 @@
     <xhtml:link rel="alternate" hreflang="en" href="https://proofvane.com/en/solutions/listing-verification/" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://proofvane.com/en/solutions/listing-verification/" />
   </url>
+  <url>
+    <loc>https://proofvane.com/tr/cozumler/tercih-on-kontrol/nasil-calisir/</loc>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://proofvane.com/tr/cozumler/tercih-on-kontrol/nasil-calisir/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://proofvane.com/en/solutions/placement-precheck/how-it-works/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://proofvane.com/en/solutions/placement-precheck/how-it-works/" />
+  </url>
+  <url>
+    <loc>https://proofvane.com/en/solutions/placement-precheck/how-it-works/</loc>
+    <xhtml:link rel="alternate" hreflang="tr" href="https://proofvane.com/tr/cozumler/tercih-on-kontrol/nasil-calisir/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://proofvane.com/en/solutions/placement-precheck/how-it-works/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://proofvane.com/en/solutions/placement-precheck/how-it-works/" />
+  </url>
 </urlset>
